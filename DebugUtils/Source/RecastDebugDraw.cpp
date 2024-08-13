@@ -21,6 +21,7 @@
 #include "RecastDebugDraw.h"
 #include "Recast.h"
 
+#include "../../RecastDemo/Include/NavProfiles.h"
 
 void duDebugDrawTriMesh(duDebugDraw* dd, const float* verts, int /*nverts*/,
 						const int* tris, const float* normals, int ntris,
@@ -116,10 +117,26 @@ void duDebugDrawTriMeshSlope(duDebugDraw* dd, const float* verts, int /*nverts*/
 		}
 		else
 		{
-			if (norm[1] < walkableThr)
-				color = duLerpCol(duRGBA(a, a, a, 255), unwalkable, 64);
+			if (surfaceTypes[triCounter] == RC_AUTOMATIC_AREA)
+			{
+				if (norm[1] < walkableThr)
+					color = duLerpCol(duRGBA(a, a, a, 255), unwalkable, 64);
+				else
+					color = duRGBA(a, a, a, 255);
+			}
 			else
-				color = duRGBA(a, a, a, 255);
+			{
+				NavAreaDefinition* AreaDef = GetAreaAtIndex(surfaceTypes[triCounter]);
+
+				if (AreaDef)
+				{
+					color = duLerpCol(AreaDef->DebugColor, unwalkable, 64);
+				}
+				else
+				{
+					color = duRGBA(a, a, a, 255);
+				}
+			}
 		}
 		
 		const float* va = &verts[tris[i+0]*3];

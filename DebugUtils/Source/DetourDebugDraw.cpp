@@ -22,6 +22,7 @@
 #include "DetourCommon.h"
 #include "DetourNode.h"
 
+#include "../../RecastDemo/Include/NavProfiles.h"
 
 static float distancePtLine2d(const float* pt, const float* p, const float* q)
 {
@@ -142,9 +143,22 @@ static void drawMeshTile(duDebugDraw* dd, const dtNavMesh& mesh, const dtNavMesh
 		else
 		{
 			if (flags & DU_DRAWNAVMESH_COLOR_TILES)
+			{
 				col = tileColor;
+			}
 			else
-				col = duTransCol(dd->areaToCol(p->getArea()), 64);
+			{
+				NavAreaDefinition* Area = GetNavAreaById(p->getArea());
+
+				if (Area)
+				{
+					col = duTransCol(Area->DebugColor, 64);
+				}
+				else
+				{
+					col = duTransCol(dd->areaToCol(p->getArea()), 64);
+				}
+			}
 		}
 		
 		for (int j = 0; j < pd->triCount; ++j)

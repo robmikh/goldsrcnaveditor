@@ -35,6 +35,7 @@ enum SampleToolType
 	TOOL_OFFMESH_CONNECTION,
 	TOOL_CONVEX_VOLUME,
 	TOOL_CROWD,
+	TOOL_MESH_EDITOR,
 	MAX_TOOLS
 };
 
@@ -179,6 +180,9 @@ public:
 
 	void resetCommonSettings();
 	void handleCommonSettings();
+
+	void SetTriangleSurfaceType(const int TriNum, const int NewAreaType);
+	void SetModelSurfaceType(const int ModelNum, const int NewAreaType);
 
 private:
 	// Explicitly disabled copy constructor and copy assignment operator.

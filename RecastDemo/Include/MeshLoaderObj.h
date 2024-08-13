@@ -39,6 +39,9 @@ public:
 	inline const int getSurfaceTypeCount() const { return m_surfTypeCount; }
 	const std::string& getFileName() const { return m_filename; }
 
+	void SetTriangleSurfaceType(const int TriNum, const int NewSurfaceType);
+	void SetModelSurfaceType(const int ModelNum, const int NewSurfaceType);
+
 private:
 	// Explicitly disabled copy constructor and copy assignment operator.
 	rcMeshLoaderObj(const rcMeshLoaderObj&);

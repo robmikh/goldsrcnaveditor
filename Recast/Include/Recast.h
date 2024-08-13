@@ -638,7 +638,7 @@ static const unsigned char RC_NULL_AREA = 0;
 /// This is also the maximum allowed area id, and the only non-null area id 
 /// recognized by some steps in the build process. 
 static const unsigned char RC_WALKABLE_AREA = 63;
-static const unsigned char RC_CROUCH_AREA = 2;
+static const unsigned char RC_CROUCH_AREA = 1;
 
 static const unsigned char RC_ILLUSIONARY_AREA = 62;
 static const unsigned char RC_AUTOMATIC_AREA = 61;

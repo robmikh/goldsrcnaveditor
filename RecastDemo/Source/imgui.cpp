@@ -20,6 +20,7 @@
 #include <string.h>
 #include <math.h>
 #include "imgui.h"
+#include "NavProfiles.h"
 
 #ifdef WIN32
 #	define snprintf _snprintf
@@ -309,6 +310,7 @@ static const int TEXT_HEIGHT = 8;
 static const int SCROLL_AREA_PADDING = 6;
 static const int INDENT_SIZE = 16;
 static const int AREA_HEADER = 28;
+static const int ROW_HEIGHT = 60;
 
 static int g_scrollTop = 0;
 static int g_scrollBottom = 0;
@@ -320,7 +322,7 @@ static int g_focusBottom = 0;
 static unsigned int g_scrollId = 0;
 static bool g_insideScrollArea = false;
 
-bool imguiBeginScrollArea(const char* name, int x, int y, int w, int h, int* scroll)
+bool imguiBeginScrollArea(const char* name, int x, int y, int w, int h, int* scroll, bool bRounded)
 {
 	g_state.areaId++;
 	g_state.widgetId = 0;
@@ -342,7 +344,14 @@ bool imguiBeginScrollArea(const char* name, int x, int y, int w, int h, int* scr
 	g_insideScrollArea = inRect(x, y, w, h, false);
 	g_state.insideCurrentScroll = g_insideScrollArea;
 
-	addGfxCmdRoundedRect((float)x, (float)y, (float)w, (float)h, 6, imguiRGBA(0,0,0,192));
+	if (bRounded)
+	{
+		addGfxCmdRoundedRect((float)x, (float)y, (float)w, (float)h, 6, imguiRGBA(0, 0, 0, 192));
+	}
+	else
+	{
+		addGfxCmdRect((float)x, (float)y, (float)w, (float)h, imguiRGBA(0, 0, 0, 192));
+	}
 
 	addGfxCmdText(x+AREA_HEADER/2, y+h-AREA_HEADER/2-TEXT_HEIGHT/2, IMGUI_ALIGN_LEFT, name, imguiRGBA(255,255,255,128));
 
@@ -673,3 +682,881 @@ void imguiDrawRoundedRect(float x, float y, float w, float h, float r, unsigned 
 	addGfxCmdRoundedRect(x, y, w, h, r, color);
 }
 
+
+inline int bit2(int a, int b)
+{
+	return (a & (1 << b)) >> b;
+}
+
+inline unsigned int duRGBA2(int r, int g, int b, int a)
+{
+	return ((unsigned int)r) | ((unsigned int)g << 8) | ((unsigned int)b << 16) | ((unsigned int)a << 24);
+}
+
+unsigned int duIntToCol2(int i, int a)
+{
+	int	r = bit2(i, 1) + bit2(i, 3) * 2 + 1;
+	int	g = bit2(i, 2) + bit2(i, 4) * 2 + 1;
+	int	b = bit2(i, 0) + bit2(i, 5) * 2 + 1;
+	return duRGBA2(r * 63, g * 63, b * 63, a);
+}
+
+bool addNavProfileEntryRow(const int ProfileIndex)
+{
+	NavAgentProfile* ProfileDef = GetAgentProfileAtIndex(ProfileIndex);
+
+	if (!ProfileDef) { return false; }
+
+	int CurrentProfileSelected = GetProfileModifier();
+
+	const int x = g_state.widgetX;
+	const int y = g_state.widgetY - ROW_HEIGHT;
+	const int w = g_state.widgetW;
+
+	int endWidgetW = g_state.widgetW;
+	int startWidgetY = g_state.widgetY;
+	int endWidgetX = g_state.widgetX;
+
+	int TotalWidth = w - 10;
+
+	int NameWidth = (int)(ceilf((float)TotalWidth * 0.9f));
+	int DeleteWidth = (int)(ceilf((float)TotalWidth * 0.1f));
+
+	g_state.widgetW = NameWidth;
+
+	if (imguiCheck(ProfileDef->ProfileName.c_str(), CurrentProfileSelected == ProfileIndex, true))
+	{
+		ResetProfileMenus();
+		SetProfileModifier(ProfileIndex);
+	}
+
+	int endWidgetY = g_state.widgetY;
+
+	g_state.widgetY = startWidgetY;
+	g_state.widgetX += NameWidth;
+
+	g_state.widgetW = 25;
+
+
+	if (imguiButton("-", true))
+	{
+		RemoveAgentProfile(ProfileIndex);
+		return true;
+	}
+
+	g_state.widgetX = endWidgetX;
+	g_state.widgetY = endWidgetY;
+	g_state.widgetW = endWidgetW;
+
+	return false;
+
+}
+
+bool showNavProfileDetails(const int ProfileIndex)
+{
+	NavAgentProfile* ProfileDef = GetAgentProfileAtIndex(ProfileIndex);
+
+	if (!ProfileDef) { return false; }
+
+	const int x = g_state.widgetX;
+	const int y = g_state.widgetY - ROW_HEIGHT;
+	const int w = g_state.widgetW;
+
+	imguiLabel("Profile Name");
+
+	char RowEntry[128];
+
+	sprintf(RowEntry, "%s", ProfileDef->ProfileName.c_str());
+
+	if (imguiButton(RowEntry, true))
+	{
+		ResetProfileMenus();
+		SetCurrentlyModifiedString(&ProfileDef->ProfileName);
+
+		return true;
+	}
+
+	imguiSeparator();
+
+	imguiLabel("Nav Mesh Used");
+
+	NavMeshDefinition* AssociatedNavMesh = GetMeshAtIndex(ProfileDef->NavMeshIndex);
+
+
+	if (imguiButton(AssociatedNavMesh->NavMeshName.c_str(), true))
+	{
+		if (GetProfileMeshModifier() > -1)
+		{
+			SetProfileMeshModifier(-1);
+		}
+		else
+		{
+			SetProfileMeshModifier(ProfileIndex);
+		}
+
+		return true;
+	}
+
+	int endWidgetX = g_state.widgetX;
+	int endWidgetY = g_state.widgetY;
+	int endWidgetW = g_state.widgetW;
+
+	if (GetProfileMeshModifier() == ProfileIndex)
+	{
+		g_state.widgetY += 20;
+
+		static int areaScroll = 0;
+
+		imguiBeginScrollArea("Choose Nav Mesh", endWidgetX, endWidgetY + 20, 200, 200, &areaScroll);
+
+		vector<NavMeshDefinition> AllMeshes = GetAllMeshDefinitions();
+
+		int MeshIndex = 0;
+
+		for (auto it = AllMeshes.begin(); it != AllMeshes.end(); it++)
+		{
+			if (imguiItem(it->NavMeshName.c_str()))
+			{
+				ProfileDef->NavMeshIndex = MeshIndex;
+				SetProfileMeshModifier(-1);
+			}
+
+			MeshIndex++;
+		}
+
+		imguiEndScrollArea();
+	}
+
+	g_state.widgetX = endWidgetX;
+	g_state.widgetY = endWidgetY;
+
+	imguiSeparator();
+
+	int CapabilityStartX = g_state.widgetX;
+	int CapabilityStartY = g_state.widgetY;
+
+	imguiLabel("Movement Capabilities");
+
+	g_state.widgetW = (g_state.widgetW / 2) - 5;
+
+	vector<NavFlagDefinition> AllFlags = GetAllNavFlagDefinitions();
+
+	for (auto it = AllFlags.begin(); it != AllFlags.end(); it++)
+	{
+		if (it->NavFlagIndex == 0) { continue; }
+
+		sprintf(RowEntry, "%s", it->FlagName.c_str());
+
+		if (imguiCheck(RowEntry, ProfileDef->MovementFlags & it->FlagId, true))
+		{
+			ProfileDef->MovementFlags ^= it->FlagId;
+		}
+	}
+
+	g_state.widgetX = CapabilityStartX + g_state.widgetW + 5;
+	g_state.widgetY = CapabilityStartY;
+
+	imguiLabel("Area Costs");
+
+	vector<NavAreaDefinition> AllAreas = GetAllNavAreaDefinitions();
+
+	for (auto it = AllAreas.begin(); it != AllAreas.end(); it++)
+	{
+		if (it->NavAreaIndex == 0) { continue; }
+
+		sprintf(RowEntry, "%s", it->AreaName.c_str());
+
+		imguiSlider(RowEntry, &ProfileDef->AreaCosts[it->NavAreaIndex], 0.1f, 20.0f, 0.1f, true);
+	}
+
+	g_state.widgetX = endWidgetX;
+	g_state.widgetY = endWidgetY;
+	g_state.widgetW = endWidgetW;
+
+	return false;
+
+}
+
+bool addNavMeshRow(const int MeshIndex)
+{
+	NavMeshDefinition* MeshDef = GetMeshAtIndex(MeshIndex);
+
+	if (!MeshDef) { return false; }
+
+	const int x = g_state.widgetX;
+	const int y = g_state.widgetY - ROW_HEIGHT;
+	const int w = g_state.widgetW;
+	const int h = ROW_HEIGHT;
+
+	addGfxCmdRect((float)x, (float)y, (float)w, (float)h, imguiRGBA(0, 0, 0, 192));
+
+	int TotalWidth = w - 10;
+
+	int IDWidth = (int)(ceilf((float)TotalWidth * 0.1f));
+	int NameWidth = (int)(ceilf((float)TotalWidth * 0.2f));
+	int RadiusWidth = (int)(ceilf((float)TotalWidth * 0.2f));
+	int StandHeightWidth = (int)(ceilf((float)TotalWidth * 0.2f));
+	int CrouchHeightWidth = (int)(ceilf((float)TotalWidth * 0.2f));
+	int DeleteWidth = (int)(ceilf((float)TotalWidth * 0.1f));
+
+	int IDStartX = x + 5;
+	int NameStartX = IDStartX + IDWidth;
+	int RadiusStartX = NameStartX + NameWidth;
+	int StandHeightStartX = RadiusStartX + RadiusWidth;
+	int CrouchHeightStartX = StandHeightStartX + StandHeightWidth;
+	int DeleteStartX = CrouchHeightStartX + CrouchHeightWidth;
+
+	int HeaderStartY = y + (h - (TEXT_HEIGHT + 10));
+	int RowStartY = y + 20;
+
+	addGfxCmdText(IDStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "ID", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(NameStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Descriptive Name", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(RadiusStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Default Agent Radius", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(StandHeightStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Default Agent Height (Standing)", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(CrouchHeightStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Default Agent Height (Crouched)", imguiRGBA(255, 255, 255, 200));
+
+	char RowEntry[128];
+
+	sprintf(RowEntry, "%d", MeshIndex);
+	addGfxCmdText(IDStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
+
+	int endWidgetX = g_state.widgetX;
+	int endWidgetY = g_state.widgetY;
+	int endWidgetW = g_state.widgetW;
+
+	g_state.widgetX = NameStartX;
+	g_state.widgetW = RadiusStartX - NameStartX - 20;
+	g_state.widgetY = RowStartY + 10;
+
+	sprintf(RowEntry, "%s", MeshDef->NavMeshName.c_str());
+
+	if (imguiButton(RowEntry, true))
+	{
+		ResetProfileMenus();
+		SetCurrentlyModifiedString(&MeshDef->NavMeshName);
+
+		return true;
+	}
+
+	g_state.widgetX = RadiusStartX;
+	g_state.widgetW = StandHeightStartX - RadiusStartX - 20;
+	g_state.widgetY = RowStartY + 10;
+
+	imguiSlider("", &MeshDef->AgentRadius, 1.0f, 200.0f, 1.0f, true);
+
+	g_state.widgetX = StandHeightStartX;
+	g_state.widgetW = CrouchHeightStartX - StandHeightStartX - 20;
+	g_state.widgetY = RowStartY + 10;
+
+	imguiSlider("", &MeshDef->AgentStandingHeight, 1.0f, 200.0f, 1.0f, true);
+
+	g_state.widgetX = CrouchHeightStartX;
+	g_state.widgetW = DeleteStartX - CrouchHeightStartX - 20;
+	g_state.widgetY = RowStartY + 10;
+
+	imguiSlider("", &MeshDef->AgentCrouchingHeight, 1.0f, 200.0f, 1.0f, true);
+
+
+	if (GetNumNavMeshes() <= 1)
+	{
+		addGfxCmdText(DeleteStartX, RowStartY, IMGUI_ALIGN_LEFT, "Min 1 Mesh Required", imguiRGBA(255, 255, 255, 200));
+	}
+	else
+	{
+		g_state.widgetX = DeleteStartX;
+		g_state.widgetW = 100;
+		g_state.widgetY = RowStartY + 10;
+
+		if (imguiButton("Delete", true))
+		{
+			ResetProfileMenus();
+			RemoveMeshDefinition(MeshIndex);
+			return true;
+		}
+	}
+
+	g_state.widgetX = endWidgetX;
+	g_state.widgetY = endWidgetY;
+	g_state.widgetW = endWidgetW;
+	g_state.widgetY -= ROW_HEIGHT;
+
+	return false;
+}
+
+bool addConnectionRow(const int ConnectionIndex)
+{
+	NavOffMeshConnectionDefinition* ConnDef = GetConnectionAtIndex(ConnectionIndex);
+
+	if (!ConnDef) { return false; }
+
+	const int x = g_state.widgetX;
+	const int y = g_state.widgetY - ROW_HEIGHT;
+	const int w = g_state.widgetW;
+	const int h = ROW_HEIGHT;
+
+	addGfxCmdRect((float)x, (float)y, (float)w, (float)h, imguiRGBA(0, 0, 0, 192));
+
+	int TotalWidth = w - 10;
+
+	int IDWidth = (int)(ceilf((float)TotalWidth * 0.1f));
+	int NameWidth = (int)(ceilf((float)TotalWidth * 0.225f));
+	int AreaWidth = (int)(ceilf((float)TotalWidth * 0.225f));
+	int FlagWidth = (int)(ceilf((float)TotalWidth * 0.225f));
+	int ColourWidth = (int)(ceilf((float)TotalWidth * 0.1f));
+	int DeleteWidth = (int)(ceilf((float)TotalWidth * 0.1f));
+
+	int IDStartX = x + 5;
+	int NameStartX = IDStartX + IDWidth;
+	int AreaStartX = NameStartX + NameWidth;
+	int FlagStartX = AreaStartX + AreaWidth;
+	int ColourStartX = FlagStartX + FlagWidth;
+	int DeleteStartX = ColourStartX + ColourWidth;
+
+	int HeaderStartY = y + (h - (TEXT_HEIGHT + 10));
+	int RowStartY = y + 20;
+
+	addGfxCmdText(IDStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "ID", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(NameStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Descriptive Name", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(AreaStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Area", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(FlagStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Flag", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(ColourStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Flag Color", imguiRGBA(255, 255, 255, 200));
+
+	char RowEntry[128];
+
+	sprintf(RowEntry, "%d", ConnDef->ConnIndex);
+	addGfxCmdText(IDStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
+
+	sprintf(RowEntry, "%s", ConnDef->ConnName.c_str());
+
+	if (ConnDef->bCustom)
+	{
+		int endWidgetX = g_state.widgetX;
+		int endWidgetY = g_state.widgetY;
+		int endWidgetW = g_state.widgetW;
+
+		g_state.widgetX = NameStartX;
+		g_state.widgetW = AreaStartX - NameStartX - 20;
+		g_state.widgetY = RowStartY + 10;
+
+		if (imguiButton(RowEntry, true))
+		{
+			ResetProfileMenus();
+			SetCurrentlyModifiedString(&ConnDef->ConnName);
+
+			return true;
+		}
+
+		g_state.widgetX = endWidgetX;
+		g_state.widgetY = endWidgetY;
+		g_state.widgetW = endWidgetW;
+
+	}
+	else
+	{
+		addGfxCmdText(NameStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
+	}
+
+	NavAreaDefinition* AreaRef = GetAreaAtIndex(ConnDef->AreaIndex);
+
+	if (AreaRef)
+	{
+		sprintf(RowEntry, "%s", AreaRef->AreaName.c_str());
+	}
+	else
+	{
+		sprintf(RowEntry, "Invalid");
+	}
+
+	if (ConnDef->bCustom)
+	{
+		int endWidgetX = g_state.widgetX;
+		int endWidgetY = g_state.widgetY;
+		int endWidgetW = g_state.widgetW;
+
+		g_state.widgetX = AreaStartX;
+		g_state.widgetW = FlagStartX - AreaStartX - 20;
+		g_state.widgetY = RowStartY + 10;
+
+		if (imguiButton(RowEntry, true))
+		{
+			if (GetConnAreaModifier() > -1)
+			{
+				SetConnAreaModifier(-1);
+			}
+			else
+			{
+				SetConnAreaModifier(ConnDef->ConnIndex);
+			}
+
+			return true;
+		}
+
+		if (GetConnAreaModifier() == ConnDef->ConnIndex)
+		{
+			g_state.widgetY += 20;
+
+			static int areaScroll = 0;
+
+			imguiBeginScrollArea("Choose Area", AreaStartX, RowStartY + 20, FlagStartX - AreaStartX - 20, 200, &areaScroll);
+
+			vector<NavAreaDefinition> AllFlags = GetAllNavAreaDefinitions();
+
+			for (auto it = AllFlags.begin(); it != AllFlags.end(); it++)
+			{
+				if (imguiItem(it->AreaName.c_str()))
+				{
+					ConnDef->AreaIndex = it->NavAreaIndex;
+					SetConnAreaModifier(-1);
+				}
+			}
+
+			imguiEndScrollArea();
+		}
+
+		g_state.widgetX = endWidgetX;
+		g_state.widgetY = endWidgetY;
+		g_state.widgetW = endWidgetW;
+
+		g_state.widgetX = endWidgetX;
+		g_state.widgetY = endWidgetY;
+		g_state.widgetW = endWidgetW;
+
+	}
+	else
+	{
+		addGfxCmdText(AreaStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
+	}
+
+	NavFlagDefinition* FlagRef = GetFlagAtIndex(ConnDef->FlagIndex);
+
+	if (FlagRef)
+	{
+		sprintf(RowEntry, "%s", FlagRef->FlagName.c_str());
+	}
+	else
+	{
+		sprintf(RowEntry, "Invalid");
+	}
+
+	if (ConnDef->bCustom)
+	{
+		int endWidgetX = g_state.widgetX;
+		int endWidgetY = g_state.widgetY;
+		int endWidgetW = g_state.widgetW;
+
+		g_state.widgetX = FlagStartX;
+		g_state.widgetW = FlagStartX - AreaStartX - 20;
+		g_state.widgetY = RowStartY + 10;
+
+		if (imguiButton(RowEntry, true))
+		{
+			if (GetConnFlagModifier() > -1)
+			{
+				SetConnFlagModifier(-1);
+			}
+			else
+			{
+				SetConnFlagModifier(ConnDef->ConnIndex);
+			}
+
+			return true;
+		}
+
+		if (GetConnFlagModifier() == ConnDef->ConnIndex)
+		{
+			g_state.widgetY += 20;
+
+			static int flagScroll = 0;
+
+			imguiBeginScrollArea("Choose Area", FlagStartX, RowStartY + 20, ColourStartX - FlagStartX - 20, 200, &flagScroll);
+
+			vector<NavFlagDefinition> AllFlags = GetAllNavFlagDefinitions();
+
+			for (auto it = AllFlags.begin(); it != AllFlags.end(); it++)
+			{
+				if (imguiItem(it->FlagName.c_str()))
+				{
+					ConnDef->FlagIndex = it->NavFlagIndex;
+					SetConnFlagModifier(-1);
+				}
+			}
+
+			imguiEndScrollArea();
+		}
+
+		g_state.widgetX = endWidgetX;
+		g_state.widgetY = endWidgetY;
+		g_state.widgetW = endWidgetW;
+
+		g_state.widgetX = endWidgetX;
+		g_state.widgetY = endWidgetY;
+		g_state.widgetW = endWidgetW;
+
+	}
+	else
+	{
+		addGfxCmdText(FlagStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
+	}
+
+	imguiDrawRect((float)ColourStartX, (float)RowStartY - 10, (float)25, (float)25, duIntToCol2(ConnDef->ConnIndex, 255));
+
+	int endWidgetX = g_state.widgetX;
+	int endWidgetY = g_state.widgetY;
+	int endWidgetW = g_state.widgetW;
+
+	g_state.widgetX = DeleteStartX;
+	g_state.widgetW = 100;
+	g_state.widgetY -= 20;
+
+	if (ConnDef->bCustom)
+	{
+		if (imguiButton("Delete", true))
+		{
+			ResetProfileMenus();
+			RemoveConnectionType(ConnectionIndex);
+			return true;
+		}
+	}
+
+	g_state.widgetX = endWidgetX;
+	g_state.widgetY = endWidgetY;
+	g_state.widgetW = endWidgetW;
+
+	g_state.widgetY -= ROW_HEIGHT;
+
+	return false;
+}
+
+bool addFlagRow(const int FlagIndex)
+{
+	NavFlagDefinition* FlagDef = GetFlagAtIndex(FlagIndex);
+
+	if (!FlagDef) { return false; }
+
+	const int x = g_state.widgetX;
+	const int y = g_state.widgetY - ROW_HEIGHT;
+	const int w = g_state.widgetW;
+	const int h = ROW_HEIGHT;
+
+	addGfxCmdRect((float)x, (float)y, (float)w, (float)h, imguiRGBA(0, 0, 0, 192));
+
+	int TotalWidth = w - 10;
+
+	int IDWidth = (int)(ceilf((float)TotalWidth * 0.1f));
+	int NameWidth = (int)(ceilf((float)TotalWidth * 0.225f));
+	int TechNameWidth = (int)(ceilf((float)TotalWidth * 0.225f));
+	int FlagWidth = (int)(ceilf((float)TotalWidth * 0.225f));
+	int ColourWidth = (int)(ceilf((float)TotalWidth * 0.1f));
+	int DeleteWidth = (int)(ceilf((float)TotalWidth * 0.1f));
+
+	int IDStartX = x + 5;
+	int NameStartX = IDStartX + IDWidth;
+	int TechNameStartX = NameStartX + NameWidth;
+	int FlagStartX = TechNameStartX + TechNameWidth;
+	int ColourStartX = FlagStartX + FlagWidth;
+	int DeleteStartX = ColourStartX + ColourWidth;
+
+	int HeaderStartY = y + (h - (TEXT_HEIGHT + 10));
+	int RowStartY = y + 20;
+
+	addGfxCmdText(IDStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "ID", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(NameStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Descriptive Name", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(TechNameStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Technical Name", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(ColourStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Flag Color", imguiRGBA(255, 255, 255, 200));
+
+	char RowEntry[128];
+
+	sprintf(RowEntry, "%d", FlagDef->NavFlagIndex);
+	addGfxCmdText(IDStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
+
+	sprintf(RowEntry, "%s", FlagDef->FlagName.c_str());
+
+	if (FlagDef->bCustom)
+	{
+		int endWidgetX = g_state.widgetX;
+		int endWidgetY = g_state.widgetY;
+		int endWidgetW = g_state.widgetW;
+
+		g_state.widgetX = NameStartX;
+		g_state.widgetW = TechNameStartX - NameStartX - 20;
+		g_state.widgetY = RowStartY + 10;
+
+		if (imguiButton(RowEntry, true))
+		{
+			ResetProfileMenus();
+			SetCurrentlyModifiedString(&FlagDef->FlagName);
+
+			return true;
+		}
+
+		g_state.widgetX = endWidgetX;
+		g_state.widgetY = endWidgetY;
+		g_state.widgetW = endWidgetW;
+
+	}
+	else
+	{
+		addGfxCmdText(NameStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
+	}
+
+	sprintf(RowEntry, "%s", FlagDef->TechnicalName.c_str());
+
+	if (FlagDef->bCustom)
+	{
+		int endWidgetX = g_state.widgetX;
+		int endWidgetY = g_state.widgetY;
+		int endWidgetW = g_state.widgetW;
+
+		g_state.widgetX = TechNameStartX;
+		g_state.widgetW = FlagStartX - TechNameStartX - 20;
+		g_state.widgetY = RowStartY + 10;
+
+		if (imguiButton(RowEntry, true))
+		{
+			ResetProfileMenus();
+			SetCurrentlyModifiedString(&FlagDef->TechnicalName);
+
+			return true;
+		}
+
+		g_state.widgetX = endWidgetX;
+		g_state.widgetY = endWidgetY;
+		g_state.widgetW = endWidgetW;
+
+	}
+	else
+	{
+		addGfxCmdText(TechNameStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
+	}
+
+	imguiDrawRect((float)ColourStartX, (float)RowStartY - 10, (float)25, (float)25, duIntToCol2(FlagDef->NavFlagIndex, 255));
+
+	int endWidgetX = g_state.widgetX;
+	int endWidgetY = g_state.widgetY;
+	int endWidgetW = g_state.widgetW;
+
+	g_state.widgetX = DeleteStartX;
+	g_state.widgetW = 100;
+	g_state.widgetY -= 20;
+
+	if (FlagDef->bCustom)
+	{
+		if (imguiButton("Delete", true))
+		{
+			ResetProfileMenus();
+			RemoveMovementFlag(FlagIndex);
+			return true;
+		}
+	}
+
+	g_state.widgetX = endWidgetX;
+	g_state.widgetY = endWidgetY;
+	g_state.widgetW = endWidgetW;
+
+	g_state.widgetY -= ROW_HEIGHT;
+
+	return false;
+}
+
+bool addAreaRow(const int AreaIndex)
+{
+	NavAreaDefinition* AreaDef = GetAreaAtIndex(AreaIndex);
+
+	if (!AreaDef) { return false; }
+
+	const int x = g_state.widgetX;
+	const int y = g_state.widgetY - ROW_HEIGHT;
+	const int w = g_state.widgetW;
+	const int h = ROW_HEIGHT;
+
+	addGfxCmdRect((float)x, (float)y, (float)w, (float)h, imguiRGBA(0, 0, 0, 192));
+
+	int TotalWidth = w - 10;
+
+	int IDWidth = (int)(ceilf((float)TotalWidth * 0.1f));
+	int NameWidth = (int)(ceilf((float)TotalWidth * 0.225f));
+	int TechNameWidth = (int)(ceilf((float)TotalWidth * 0.225f));
+	int FlagWidth = (int)(ceilf((float)TotalWidth * 0.225f));
+	int ColourWidth = (int)(ceilf((float)TotalWidth * 0.1f));
+	int DeleteWidth = (int)(ceilf((float)TotalWidth * 0.1f));
+
+	int IDStartX = x + 5;
+	int NameStartX = IDStartX + IDWidth;
+	int TechNameStartX = NameStartX + NameWidth;
+	int FlagStartX = TechNameStartX + TechNameWidth;
+	int ColourStartX = FlagStartX + FlagWidth;
+	int DeleteStartX = ColourStartX + ColourWidth;
+
+	int HeaderStartY = y + (h - (TEXT_HEIGHT + 10));
+	int RowStartY = y + 20;
+
+	addGfxCmdText(IDStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "ID", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(NameStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Descriptive Name", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(TechNameStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Technical Name", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(FlagStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Flag Used When Traversing", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(ColourStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Area Color", imguiRGBA(255, 255, 255, 200));
+
+	char RowEntry[128];
+
+	sprintf(RowEntry, "%d", AreaDef->AreaId);
+	addGfxCmdText(IDStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
+
+	sprintf(RowEntry, "%s", AreaDef->AreaName.c_str());
+
+	if (AreaDef->bCustom)
+	{
+		int endWidgetX = g_state.widgetX;
+		int endWidgetY = g_state.widgetY;
+		int endWidgetW = g_state.widgetW;
+
+		g_state.widgetX = NameStartX;
+		g_state.widgetW = TechNameStartX - NameStartX - 20;
+		g_state.widgetY = RowStartY + 10;
+
+		if (imguiButton(RowEntry, true))
+		{
+			if (GetCurrentlyModifiedString() != &AreaDef->AreaName)
+			{
+				ResetProfileMenus();
+				SetCurrentlyModifiedString(&AreaDef->AreaName);
+			}
+
+			return true;
+		}
+
+		g_state.widgetX = endWidgetX;
+		g_state.widgetY = endWidgetY;
+		g_state.widgetW = endWidgetW;
+
+	}
+	else
+	{
+		addGfxCmdText(NameStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
+	}
+
+	sprintf(RowEntry, "%s", AreaDef->TechnicalName.c_str());
+
+	if (AreaDef->bCustom)
+	{
+		int endWidgetX = g_state.widgetX;
+		int endWidgetY = g_state.widgetY;
+		int endWidgetW = g_state.widgetW;
+
+		g_state.widgetX = TechNameStartX;
+		g_state.widgetW = FlagStartX - TechNameStartX - 20;
+		g_state.widgetY = RowStartY + 10;
+
+		if (imguiButton(RowEntry, true))
+		{
+			ResetProfileMenus();
+			SetCurrentlyModifiedString(&AreaDef->TechnicalName);
+
+			return true;
+		}
+
+		g_state.widgetX = endWidgetX;
+		g_state.widgetY = endWidgetY;
+		g_state.widgetW = endWidgetW;
+
+	}
+	else
+	{
+		addGfxCmdText(TechNameStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
+
+	}
+
+	NavFlagDefinition* FlagRef = GetFlagAtIndex(AreaDef->FlagIndex);
+
+	if (FlagRef)
+	{
+		sprintf(RowEntry, "%s", FlagRef->FlagName.c_str());
+	}
+	else
+	{
+		sprintf(RowEntry, "Invalid");
+	}
+
+	if (AreaDef->bCustom)
+	{
+		int endWidgetX = g_state.widgetX;
+		int endWidgetY = g_state.widgetY;
+		int endWidgetW = g_state.widgetW;
+
+		g_state.widgetX = FlagStartX;
+		g_state.widgetW = ColourStartX - FlagStartX - 20;
+		g_state.widgetY = RowStartY + 10;
+
+		if (imguiButton(RowEntry, true))
+		{
+			if (GetAreaFlagModifier() > -1)
+			{
+				SetAreaFlagModifier(-1);
+			}
+			else
+			{
+				SetAreaFlagModifier(AreaDef->NavAreaIndex);
+			}
+
+			return true;
+		}
+
+		if (GetAreaFlagModifier() == AreaDef->NavAreaIndex)
+		{
+			g_state.widgetY += 20;
+
+			static int levelScroll = 0;
+
+			imguiBeginScrollArea("Choose Flag", FlagStartX, RowStartY + 20, ColourStartX - FlagStartX - 20, 200, &levelScroll);
+
+			vector<NavFlagDefinition> AllFlags = GetAllNavFlagDefinitions();
+
+			for (auto it = AllFlags.begin(); it != AllFlags.end(); it++)
+			{
+				if (imguiItem(it->FlagName.c_str()))
+				{
+					AreaDef->FlagIndex = it->NavFlagIndex;
+					SetAreaFlagModifier(-1);
+				}
+			}
+
+			imguiEndScrollArea();
+		}
+
+		g_state.widgetX = endWidgetX;
+		g_state.widgetY = endWidgetY;
+		g_state.widgetW = endWidgetW;
+	}
+	else
+	{
+
+		addGfxCmdText(FlagStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
+	}
+
+	imguiDrawRect((float)ColourStartX, (float)RowStartY - 10, (float)25, (float)25, AreaDef->DebugColor);
+
+	int endWidgetX = g_state.widgetX;
+	int endWidgetY = g_state.widgetY;
+	int endWidgetW = g_state.widgetW;
+
+	g_state.widgetX = DeleteStartX;
+	g_state.widgetW = 100;
+	g_state.widgetY -= 20;
+
+	if (AreaDef->bCustom)
+	{
+		if (imguiButton("Delete", true))
+		{
+			ResetProfileMenus();
+			RemoveMovementArea(AreaIndex);
+			return true;
+		}
+	}
+
+	g_state.widgetX = endWidgetX;
+	g_state.widgetY = endWidgetY;
+	g_state.widgetW = endWidgetW;
+
+	g_state.widgetY -= ROW_HEIGHT;
+
+	return false;
+}

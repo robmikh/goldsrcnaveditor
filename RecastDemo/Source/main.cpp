@@ -42,6 +42,7 @@
 #include "Sample_TileMesh.h"
 #include "Sample_TempObstacles.h"
 #include "Sample_Debug.h"
+#include "NavProfiles.h"
 
 #ifdef WIN32
 #	define snprintf _snprintf
@@ -154,6 +155,7 @@ int main(int /*argc*/, char** /*argv*/)
 	float rayEnd[3];
 	bool mouseOverMenu = false;
 	
+	bool profileChosen = false;
 	bool showMenu = !presentationMode;
 	bool showLog = false;
 	bool showTools = true;
@@ -207,11 +209,40 @@ int main(int /*argc*/, char** /*argv*/)
 		{
 			switch (event.type)
 			{
+				case SDL_TEXTINPUT:
+				{
+					string* ModifiedString = GetCurrentlyModifiedString();
+					/* Add new text onto the end of our text */
+					if (ModifiedString)
+					{
+						ModifiedString->append(event.text.text);
+					}
+					else
+					{
+						SDL_StopTextInput();
+					}
+				}
+				break;
 				case SDL_KEYDOWN:
 					// Handle any key presses here.
-					if (event.key.keysym.sym == SDLK_ESCAPE)
+					if (event.key.keysym.sym == SDLK_ESCAPE || event.key.keysym.sym == SDLK_RETURN)
 					{
-						done = true;
+						string* CurrentModifiedString = GetCurrentlyModifiedString();
+
+						if (CurrentModifiedString)
+						{
+							ResetProfileMenus();
+							SDL_StopTextInput();
+						}
+					}
+					else if (event.key.keysym.sym == SDLK_BACKSPACE)
+					{
+						string* CurrentModifiedString = GetCurrentlyModifiedString();
+
+						if (CurrentModifiedString && CurrentModifiedString->length() > 0)
+						{
+							CurrentModifiedString->pop_back();
+						}
 					}
 					else if (event.key.keysym.sym == SDLK_t)
 					{
@@ -502,8 +533,292 @@ int main(int /*argc*/, char** /*argv*/)
 		mouseOverMenu = false;
 		
 		imguiBeginFrame(mousePos[0], mousePos[1], mouseButtonMask, mouseScroll);
+
+		if (!profileChosen)
+		{
+			static bool bShowAreaList = false;
+			static bool bShowFlagList = false;
+			static bool bShowProfileFlags = true;
+			static bool bShowProfileAreas = false;
+			static bool bShowProfileConnections = false;
+			static bool bShowProfileProfiles = false;
+			static bool bShowNavMeshProfiles = false;
+
+			static int profileScroll = 0;
+			static int areaScroll = 0;
+			static int flagScroll = 0;
+
+			static NavOffMeshConnectionDefinition* MoveToModify = nullptr;
+			static NavAreaDefinition* AreaToModify = nullptr;
+
+			if (imguiBeginScrollArea("Game Profiles", 10, 10, 250, height - 20, &toolsScroll))
+				mouseOverMenu = true;
+
+			int Index = GetCurrentGameProfileIndex();
+			vector<NavGameProfile> GameProfiles = GetAllGameProfiles();
+
+			int CurrIndex = 0;
+
+			for (auto it = GameProfiles.begin(); it != GameProfiles.end(); it++)
+			{
+
+				if (imguiCheck(it->GameName.c_str(), Index == CurrIndex))
+				{
+					ResetProfileMenus();
+					SetCurrentGameProfileIndex(CurrIndex);
+				}
+
+				imguiSeparatorLine();
+
+				CurrIndex++;
+			}
+
+			if (imguiButton("Create New Profile", true))
+			{
+				ResetProfileMenus();
+				CreateNewGameProfile();
+			}
+
+			if (imguiButton("Delete Selected Profile", true))
+			{
+				ResetProfileMenus();
+				DeleteGameProfile(GetCurrentGameProfileIndex());
+			}
+
+			if (imguiButton("Use Selected Profile", true))
+			{
+				ResetProfileMenus();
+				if (GetCurrentGameProfile())
+				{
+					bool bShowAreaList = false;
+					bool bShowFlagList = false;
+					profileChosen = true;
+				}
+			}
+
+			imguiEndScrollArea();
+
+			NavGameProfile* CurrentNavProfile = GetCurrentGameProfile();
+
+			if (CurrentNavProfile)
+			{
+				char PanelTitle[256];
+
+				sprintf(PanelTitle, "Game Profile: %s", CurrentNavProfile->GameName.c_str());
+
+				if (imguiBeginScrollArea(PanelTitle, 270, height - 210, width - 270 - 20, 200, &profileScroll))
+					mouseOverMenu = true;
+
+				imguiSeparator();
+				imguiLabel("Profile Name:");
+
+				if (imguiButton(CurrentNavProfile->GameName.c_str()))
+				{
+					ResetProfileMenus();
+					SetCurrentlyModifiedString(&CurrentNavProfile->GameName);
+				}
+
+				if (imguiCheck("Flags", bShowProfileFlags, true))
+				{
+					ResetProfileMenus();
+					bShowProfileFlags = true;
+					bShowProfileAreas = false;
+					bShowProfileConnections = false;
+					bShowProfileProfiles = false;
+					bShowNavMeshProfiles = false;
+				}
+
+				if (imguiCheck("Areas", bShowProfileAreas, true))
+				{
+					ResetProfileMenus();
+					bShowProfileFlags = false;
+					bShowProfileAreas = true;
+					bShowProfileConnections = false;
+					bShowProfileProfiles = false;
+					bShowNavMeshProfiles = false;
+				}
+
+				if (imguiCheck("Off-Mesh Connection Types", bShowProfileConnections, true))
+				{
+					ResetProfileMenus();
+					bShowProfileFlags = false;
+					bShowProfileAreas = false;
+					bShowProfileConnections = true;
+					bShowProfileProfiles = false;
+					bShowNavMeshProfiles = false;
+				}
+
+				if (imguiCheck("Nav Meshes", bShowNavMeshProfiles, true))
+				{
+					ResetProfileMenus();
+					bShowProfileFlags = false;
+					bShowProfileAreas = false;
+					bShowProfileConnections = false;
+					bShowProfileProfiles = false;
+					bShowNavMeshProfiles = true;
+				}
+
+				if (imguiCheck("Movement Profiles", bShowProfileProfiles, true))
+				{
+					ResetProfileMenus();
+					bShowProfileFlags = false;
+					bShowProfileAreas = false;
+					bShowProfileConnections = false;
+					bShowProfileProfiles = true;
+					bShowNavMeshProfiles = false;
+				}
+
+				imguiSeparator();
+
+				imguiEndScrollArea();
+
+				char ScrollAreaName[128];
+
+				if (bShowProfileFlags)
+				{
+					sprintf(ScrollAreaName, "Movement Flag Definitions");
+
+					// 0,0 is bottom left of screen (centre would be width / 2, height / 2
+					// Rectangle starts in the bottom left, and the width and height "drag it out" upwards and to the right
+					if (imguiBeginScrollArea(ScrollAreaName, 270, 10, width - 270 - 20, height - 230, &flagScroll, false))
+						mouseOverMenu = true;
+
+					int areaIndex = 0;
+
+					for (auto flagIt = CurrentNavProfile->FlagDefinitions.begin(); flagIt != CurrentNavProfile->FlagDefinitions.end(); flagIt++)
+					{
+						if (addFlagRow(areaIndex)) { break; }
+						areaIndex++;
+					}
+
+					imguiSeparator();
+
+					if (imguiButton("Add Flag"))
+					{
+						ResetProfileMenus();
+						CreateNewMovementFlag();
+					}
+				}
+				else if (bShowProfileAreas)
+				{
+					sprintf(ScrollAreaName, "Movement Area Definitions");
+
+					if (imguiBeginScrollArea(ScrollAreaName, 270, 10, width - 270 - 20, height - 230, &areaScroll, false))
+						mouseOverMenu = true;
+
+					int areaIndex = 0;
+
+					for (auto areaIt = CurrentNavProfile->AreaDefinitions.begin(); areaIt != CurrentNavProfile->AreaDefinitions.end(); areaIt++)
+					{
+						if (addAreaRow(areaIndex)) { break; }
+						areaIndex++;
+					}
+
+					imguiSeparator();
+
+					if (imguiButton("Add Area"))
+					{
+						ResetProfileMenus();
+						CreateNewAreaDefinition();
+					}
+				}
+				else if (bShowProfileConnections)
+				{
+					sprintf(ScrollAreaName, "Off-Mesh Connection Type Definitions");
+
+					if (imguiBeginScrollArea(ScrollAreaName, 270, 10, width - 270 - 20, height - 230, &areaScroll, false))
+						mouseOverMenu = true;
+
+					int connIndex = 0;
+
+					for (auto connIt = CurrentNavProfile->ConnectionDefinitions.begin(); connIt != CurrentNavProfile->ConnectionDefinitions.end(); connIt++)
+					{
+						if (addConnectionRow(connIndex)) { break; }
+						connIndex++;
+					}
+
+					imguiSeparator();
+
+					if (imguiButton("Add Connection Type"))
+					{
+						ResetProfileMenus();
+						CreateConnectionType();
+					}
+				}
+				else if (bShowNavMeshProfiles)
+				{
+					sprintf(ScrollAreaName, "Nav Mesh Definitions");
+
+					if (imguiBeginScrollArea(ScrollAreaName, 270, 10, width - 270 - 20, height - 230, &areaScroll, false))
+						mouseOverMenu = true;
+
+					int meshIndex = 0;
+
+					for (auto meshIt = CurrentNavProfile->MeshDefinitions.begin(); meshIt != CurrentNavProfile->MeshDefinitions.end(); meshIt++)
+					{
+						if (addNavMeshRow(meshIndex)) { break; }
+						meshIndex++;
+					}
+
+					imguiSeparator();
+
+					if (imguiButton("Define New Nav Mesh"))
+					{
+						ResetProfileMenus();
+						CreateNewNavMesh();
+					}
+				}
+				else if (bShowProfileProfiles)
+				{
+					int ProfileListWidth = 200;
+					int ProfilePanelWidth = (width - 270 - 20) - ProfileListWidth - 10;
+
+					if (imguiBeginScrollArea("Movement Profiles", 270, 10, ProfileListWidth, height - 230, &areaScroll, false))
+						mouseOverMenu = true;
+
+					imguiSeparator();
+
+					int ProfileIndex = 0;
+
+					for (auto profIt = CurrentNavProfile->ProfileDefinitions.begin(); profIt != CurrentNavProfile->ProfileDefinitions.end(); profIt++)
+					{
+						if (addNavProfileEntryRow(ProfileIndex)) { break; }
+
+						ProfileIndex++;
+					}
+
+					if (imguiButton("Add Profile", true))
+					{
+						CreateNewAgentProfile();
+					}
+
+					imguiEndScrollArea();
+
+					if (imguiBeginScrollArea("Profile Details", 480, 10, ProfilePanelWidth, height - 230, &areaScroll, false))
+						mouseOverMenu = true;
+
+					showNavProfileDetails(GetProfileModifier());
+
+
+				}
+
+				imguiEndScrollArea();
+
+				string* CurrentlyModifiedString = GetCurrentlyModifiedString();
+
+				if (CurrentlyModifiedString && !SDL_IsTextInputActive())
+				{
+					SDL_StartTextInput();
+				}
+				else if (!CurrentlyModifiedString && SDL_IsTextInputActive())
+				{
+					SDL_StopTextInput();
+				}
+			}
+
+		}
 		
-		if (sample)
+		if (profileChosen && sample)
 		{
 			sample->handleRenderOverlay((double*)projectionMatrix, (double*)modelviewMatrix, (int*)viewport);
 		}
@@ -514,13 +829,13 @@ int main(int /*argc*/, char** /*argv*/)
 		}
 
 		// Help text.
-		if (showMenu)
+		if (profileChosen && showMenu)
 		{
 			const char msg[] = "W/S/A/D: Move  RMB: Rotate";
 			imguiDrawText(280, height-20, IMGUI_ALIGN_LEFT, msg, imguiRGBA(255,255,255,128));
 		}
 		
-		if (showMenu)
+		if (profileChosen && showMenu)
 		{
 			if (imguiBeginScrollArea("Properties", width-250-10, 10, 250, height-20, &propScroll))
 				mouseOverMenu = true;
@@ -606,7 +921,7 @@ int main(int /*argc*/, char** /*argv*/)
 		}
 		
 		// Sample selection dialog.
-		if (showSample)
+		if (profileChosen && showSample)
 		{
 			static int levelScroll = 0;
 			if (imguiBeginScrollArea("Choose Sample", width-10-250-10-200, height-10-250, 200, 250, &levelScroll))
@@ -664,7 +979,7 @@ int main(int /*argc*/, char** /*argv*/)
 		}
 		
 		// Level selection dialog.
-		if (showLevels)
+		if (profileChosen && showLevels)
 		{
 			static int levelScroll = 0;
 			if (imguiBeginScrollArea("Choose Level", width - 10 - 250 - 10 - 200, height - 10 - 450, 200, 450, &levelScroll))
@@ -754,7 +1069,7 @@ int main(int /*argc*/, char** /*argv*/)
 		}
 		
 		// Test cases
-		if (showTestCases)
+		if (profileChosen && showTestCases)
 		{
 			static int testScroll = 0;
 			if (imguiBeginScrollArea("Choose Test To Run", width-10-250-10-200, height-10-450, 200, 450, &testScroll))
@@ -875,7 +1190,7 @@ int main(int /*argc*/, char** /*argv*/)
 
 		
 		// Log
-		if (showLog && showMenu)
+		if (profileChosen && showLog && showMenu)
 		{
 			if (imguiBeginScrollArea("Log", 250 + 20, 10, width - 300 - 250, 200, &logScroll))
 				mouseOverMenu = true;
@@ -885,7 +1200,7 @@ int main(int /*argc*/, char** /*argv*/)
 		}
 		
 		// Left column tools menu
-		if (!showTestCases && showTools && showMenu) // && geom && sample)
+		if (profileChosen && !showTestCases && showTools && showMenu) // && geom && sample)
 		{
 			if (imguiBeginScrollArea("Tools", 10, 10, 250, height - 20, &toolsScroll))
 				mouseOverMenu = true;

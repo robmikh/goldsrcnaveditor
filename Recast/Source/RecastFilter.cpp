@@ -195,9 +195,20 @@ void rcFilterWalkableLowHeightSpans(rcContext* context, const int walkableHeight
 				{
 					span->area = RC_NULL_AREA;
 				}
-				else if (ceiling - floor < walkableHeight)
+				else if (span->area == RC_AUTOMATIC_AREA)
 				{
-					span->area = RC_CROUCH_AREA;
+					if (ceiling - floor < walkableHeight)
+					{
+						span->area = 2;
+					}
+					else
+					{
+						span->area = 1;
+					}
+				}
+				else if (span->area == 0)
+				{
+					bool bBoop = true;
 				}
 			}
 		}

@@ -70,7 +70,7 @@ Sample::Sample() :
 	m_navMesh(0),
 	m_navQuery(0),
 	m_crowd(0),
-	m_navMeshDrawFlags(DU_DRAWNAVMESH_OFFMESHCONS|DU_DRAWNAVMESH_CLOSEDLIST),
+	m_navMeshDrawFlags(DU_DRAWNAVMESH_OFFMESHCONS),
 	m_filterLowHangingObstacles(true),
 	m_filterLedgeSpans(false),
 	m_filterWalkableLowHeightSpans(true),
@@ -455,4 +455,20 @@ void Sample::saveAll(const char* path, const dtNavMesh* mesh)
 	}
 
 	fclose(fp);
+}
+
+void Sample::SetTriangleSurfaceType(const int TriNum, const int NewAreaType)
+{
+	if (m_geom)
+	{
+		m_geom->SetTriangleArea(TriNum, NewAreaType);
+	}
+}
+
+void Sample::SetModelSurfaceType(const int ModelNum, const int NewAreaType)
+{
+	if (m_geom)
+	{
+		m_geom->SetModelArea(ModelNum, NewAreaType);
+	}
 }

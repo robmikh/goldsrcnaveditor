@@ -40,7 +40,7 @@ inline unsigned int imguiRGBA(unsigned char r, unsigned char g, unsigned char b,
 void imguiBeginFrame(int mx, int my, unsigned char mbut, int scroll);
 void imguiEndFrame();
 
-bool imguiBeginScrollArea(const char* name, int x, int y, int w, int h, int* scroll);
+bool imguiBeginScrollArea(const char* name, int x, int y, int w, int h, int* scroll, bool bRounded = true);
 void imguiEndScrollArea();
 
 void imguiIndent();
@@ -60,6 +60,13 @@ void imguiDrawText(int x, int y, int align, const char* text, unsigned int color
 void imguiDrawLine(float x0, float y0, float x1, float y1, float r, unsigned int color);
 void imguiDrawRoundedRect(float x, float y, float w, float h, float r, unsigned int color);
 void imguiDrawRect(float x, float y, float w, float h, unsigned int color);
+
+bool addAreaRow(const int AreaIndex);
+bool addFlagRow(const int FlagIndex);
+bool addConnectionRow(const int ConnectionIndex);
+bool addNavMeshRow(const int MeshIndex);
+bool addNavProfileEntryRow(const int ProfileIndex);
+bool showNavProfileDetails(const int ProfileIndex);
 
 // Pull render interface.
 enum imguiGfxCmdType

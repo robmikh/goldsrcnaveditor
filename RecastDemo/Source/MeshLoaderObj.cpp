@@ -690,3 +690,29 @@ bool rcMeshLoaderObj::loadBSP(const std::string& filename)
 	return false;
 
 }
+
+void rcMeshLoaderObj::SetTriangleSurfaceType(const int TriNum, const int NewSurfaceType)
+{
+	if (m_surfTypes)
+	{
+		m_surfTypes[TriNum] = NewSurfaceType;
+	}
+}
+
+void rcMeshLoaderObj::SetModelSurfaceType(const int ModelNum, const int NewSurfaceType)
+{
+	if (m_triModels)
+	{
+		int modelNum = m_triModels[ModelNum];
+
+		if (modelNum <= 0) { return; }
+
+		for (int i = 0; i < m_triCount; i++)
+		{
+			if (m_triModels[i] == modelNum)
+			{
+				SetTriangleSurfaceType(i, NewSurfaceType);
+			}
+		}
+	}
+}

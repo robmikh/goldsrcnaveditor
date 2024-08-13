@@ -36,6 +36,9 @@
 #include "OffMeshConnectionTool.h"
 #include "ConvexVolumeTool.h"
 #include "CrowdTool.h"
+#include "MeshEditorTool.h"
+
+#include "NavProfiles.h"
 
 #ifdef WIN32
 #	define snprintf _snprintf
@@ -117,6 +120,10 @@ void Sample_SoloMesh::handleTools()
 {
 	int type = !m_tool ? TOOL_NONE : m_tool->type();
 	
+	if (imguiCheck("Edit Map", type == TOOL_MESH_EDITOR))
+	{
+		setTool(new MeshEditorTool);
+	}
 	if (imguiCheck("Test Navmesh", type == TOOL_NAVMESH_TESTER))
 	{
 		setTool(new NavMeshTesterTool);
@@ -146,6 +153,7 @@ void Sample_SoloMesh::handleTools()
 		m_tool->handleMenu();
 
 	imguiUnindent();
+
 
 }
 
@@ -658,27 +666,22 @@ bool Sample_SoloMesh::handleBuild()
 		// Update poly flags from areas.
 		for (int i = 0; i < m_pmesh->npolys; ++i)
 		{
-			if (m_pmesh->areas[i] == RC_WALKABLE_AREA)
-				m_pmesh->areas[i] = SAMPLE_POLYAREA_GROUND;
+			NavAreaDefinition* Area = GetAreaAtIndex(m_pmesh->areas[i]);
 
-			if (m_pmesh->areas[i] == RC_CROUCH_AREA)
+			if (Area)
 			{
-				m_pmesh->areas[i] = SAMPLE_POLYAREA_GRASS;
-			}
-				
-			if (m_pmesh->areas[i] == SAMPLE_POLYAREA_GROUND ||
-				m_pmesh->areas[i] == SAMPLE_POLYAREA_GRASS ||
-				m_pmesh->areas[i] == SAMPLE_POLYAREA_ROAD)
-			{
-				m_pmesh->flags[i] = SAMPLE_POLYFLAGS_WALK;
-			}
-			else if (m_pmesh->areas[i] == SAMPLE_POLYAREA_WATER)
-			{
-				m_pmesh->flags[i] = SAMPLE_POLYFLAGS_SWIM;
-			}
-			else if (m_pmesh->areas[i] == SAMPLE_POLYAREA_DOOR)
-			{
-				m_pmesh->flags[i] = SAMPLE_POLYFLAGS_WALK | SAMPLE_POLYFLAGS_DOOR;
+				m_pmesh->areas[i] = Area->AreaId;
+
+				NavFlagDefinition* Flag = GetFlagAtIndex(Area->FlagIndex);
+
+				if (Flag)
+				{
+					if (Flag->NavFlagIndex == 0)
+					{
+						bool bBoop = true;
+					}
+					m_pmesh->flags[i] = Flag->FlagId;
+				}
 			}
 		}
 

@@ -76,6 +76,7 @@ class InputGeom
 	float m_meshBMin[3], m_meshBMax[3];
 	BuildSettings m_buildSettings;
 	bool m_hasBuildSettings;
+	bool m_hideIllusionary = false;
 	
 	/// @name Off-Mesh connections.
 	///@{
@@ -102,8 +103,7 @@ class InputGeom
 public:
 	InputGeom();
 	~InputGeom();
-	
-	
+		
 	bool load(class rcContext* ctx, const std::string& filepath);
 	bool saveGeomSet(const BuildSettings* settings);
 	
@@ -143,6 +143,17 @@ public:
 	void deleteConvexVolume(int i);
 	void drawConvexVolumes(struct duDebugDraw* dd, bool hilight = false);
 	///@}
+
+	void SetTriangleArea(int TriNum, const int NewAreaType);
+	void SetModelArea(int ModelNum, const int NewAreaType);
+
+	static bool intersectSegmentTriangle(const float* sp, const float* sq,
+		const float* a, const float* b, const float* c,
+		float& t);
+
+	bool getHideIllusionary() { return m_hideIllusionary; }
+	void setHideIllusionary(bool bNewValue) { m_hideIllusionary = bNewValue; }
+
 	
 private:
 	// Explicitly disabled copy constructor and copy assignment operator.

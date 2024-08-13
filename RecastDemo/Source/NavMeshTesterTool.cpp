@@ -38,6 +38,8 @@
 #include "DetourCommon.h"
 #include "DetourPathCorridor.h"
 
+#include "NavProfiles.h"
+
 #ifdef WIN32
 #	define snprintf _snprintf
 #endif
@@ -212,11 +214,13 @@ void NavMeshTesterTool::init(Sample* sample)
 	{
 		// Change costs.
 		m_filter.setAreaCost(SAMPLE_POLYAREA_GROUND, 1.0f);
-		m_filter.setAreaCost(SAMPLE_POLYAREA_WATER, 10.0f);
-		m_filter.setAreaCost(SAMPLE_POLYAREA_ROAD, 1.0f);
-		m_filter.setAreaCost(SAMPLE_POLYAREA_DOOR, 1.0f);
+		m_filter.setAreaCost(1, 1.0f);
+		m_filter.setAreaCost(2, 3.0f);
+		m_filter.setAreaCost(3, 10.0f);
 		m_filter.setAreaCost(SAMPLE_POLYAREA_GRASS, 2.0f);
 		m_filter.setAreaCost(SAMPLE_POLYAREA_JUMP, 1.5f);
+
+		m_filter.setExcludeFlags(1 << 15);
 	}
 	
 	m_neighbourhoodRadius = sample->getAgentRadius() * 20.0f;
@@ -365,56 +369,35 @@ void NavMeshTesterTool::handleMenu()
 	
 	imguiSeparator();
 
-	imguiLabel("Include Flags");
+	imguiLabel("Profiles");
 
-	imguiIndent();
-	if (imguiCheck("Walk", (m_filter.getIncludeFlags() & SAMPLE_POLYFLAGS_WALK) != 0))
-	{
-		m_filter.setIncludeFlags(m_filter.getIncludeFlags() ^ SAMPLE_POLYFLAGS_WALK);
-		recalc();
-	}
-	if (imguiCheck("Swim", (m_filter.getIncludeFlags() & SAMPLE_POLYFLAGS_SWIM) != 0))
-	{
-		m_filter.setIncludeFlags(m_filter.getIncludeFlags() ^ SAMPLE_POLYFLAGS_SWIM);
-		recalc();
-	}
-	if (imguiCheck("Door", (m_filter.getIncludeFlags() & SAMPLE_POLYFLAGS_DOOR) != 0))
-	{
-		m_filter.setIncludeFlags(m_filter.getIncludeFlags() ^ SAMPLE_POLYFLAGS_DOOR);
-		recalc();
-	}
-	if (imguiCheck("Jump", (m_filter.getIncludeFlags() & SAMPLE_POLYFLAGS_JUMP) != 0))
-	{
-		m_filter.setIncludeFlags(m_filter.getIncludeFlags() ^ SAMPLE_POLYFLAGS_JUMP);
-		recalc();
-	}
-	imguiUnindent();
+	vector<NavAgentProfile> AllProfiles = GetAllAgentProfileDefinitions();
 
-	imguiSeparator();
-	imguiLabel("Exclude Flags");
-	
-	imguiIndent();
-	if (imguiCheck("Walk", (m_filter.getExcludeFlags() & SAMPLE_POLYFLAGS_WALK) != 0))
+	int thisIndex = 0;
+
+	for (auto it = AllProfiles.begin(); it != AllProfiles.end(); it++)
 	{
-		m_filter.setExcludeFlags(m_filter.getExcludeFlags() ^ SAMPLE_POLYFLAGS_WALK);
-		recalc();
+		if (imguiCheck(it->ProfileName.c_str(), m_ProfileIndex == thisIndex))
+		{
+			if (m_ProfileIndex != thisIndex)
+			{
+				m_filter.setIncludeFlags(it->MovementFlags);
+				m_filter.setExcludeFlags(1 << 15);
+
+				vector<NavAreaDefinition> AllAreas = GetAllNavAreaDefinitions();
+
+				for (auto areaIt = AllAreas.begin(); areaIt != AllAreas.end(); areaIt++)
+				{
+					m_filter.setAreaCost(areaIt->AreaId, it->AreaCosts[areaIt->AreaId]);
+				}
+			}
+
+			m_ProfileIndex = thisIndex;
+
+			recalc();
+		}
+		thisIndex++;
 	}
-	if (imguiCheck("Swim", (m_filter.getExcludeFlags() & SAMPLE_POLYFLAGS_SWIM) != 0))
-	{
-		m_filter.setExcludeFlags(m_filter.getExcludeFlags() ^ SAMPLE_POLYFLAGS_SWIM);
-		recalc();
-	}
-	if (imguiCheck("Door", (m_filter.getExcludeFlags() & SAMPLE_POLYFLAGS_DOOR) != 0))
-	{
-		m_filter.setExcludeFlags(m_filter.getExcludeFlags() ^ SAMPLE_POLYFLAGS_DOOR);
-		recalc();
-	}
-	if (imguiCheck("Jump", (m_filter.getExcludeFlags() & SAMPLE_POLYFLAGS_JUMP) != 0))
-	{
-		m_filter.setExcludeFlags(m_filter.getExcludeFlags() ^ SAMPLE_POLYFLAGS_JUMP);
-		recalc();
-	}
-	imguiUnindent();
 
 	imguiSeparator();	
 }
@@ -423,13 +406,13 @@ void NavMeshTesterTool::handleClick(const float* /*s*/, const float* p, bool shi
 {
 	if (shift)
 	{
-		m_sposSet = true;
-		dtVcopy(m_spos, p);
+		m_eposSet = true;
+		dtVcopy(m_epos, p);
 	}
 	else
 	{
-		m_eposSet = true;
-		dtVcopy(m_epos, p);
+		m_sposSet = true;
+		dtVcopy(m_spos, p);
 	}
 	recalc();
 }

@@ -64,7 +64,7 @@
 #define PLANE_ANYY 4
 #define PLANE_ANYZ 5
 
-#define MT_MODEL_SOLID 0
+#define MT_MODEL_SOLID 61
 #define MT_MODEL_ILLUSIONARY 62
 
 #define CS_PLAYER_HEIGHT 74.0f // Player height in GoldSrc units
