@@ -173,7 +173,7 @@ void rcFilterLedgeSpans(rcContext* context, const int walkableHeight, const int 
 	}
 }
 
-void rcFilterWalkableLowHeightSpans(rcContext* context, const int walkableHeight, rcHeightfield& heightfield)
+void rcFilterWalkableLowHeightSpans(rcContext* context, const int walkableHeight, const int crouchHeight, rcHeightfield& heightfield)
 {
 	rcAssert(context);
 	rcScopedTimer timer(context, RC_TIMER_FILTER_WALKABLE);
@@ -191,9 +191,13 @@ void rcFilterWalkableLowHeightSpans(rcContext* context, const int walkableHeight
 			{
 				const int floor = (int)(span->smax);
 				const int ceiling = span->next ? (int)(span->next->smin) : MAX_HEIGHTFIELD_HEIGHT;
-				if (ceiling - floor < walkableHeight)
+				if (ceiling - floor < crouchHeight)
 				{
 					span->area = RC_NULL_AREA;
+				}
+				else if (ceiling - floor < walkableHeight)
+				{
+					span->area = RC_CROUCH_AREA;
 				}
 			}
 		}

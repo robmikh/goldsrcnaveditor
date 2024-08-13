@@ -242,7 +242,7 @@ void Sample_SoloMesh::handleRender()
 		// Draw mesh
 		duDebugDrawTriMeshSlope(&m_dd, m_geom->getMesh()->getVerts(), m_geom->getMesh()->getVertCount(),
 								m_geom->getMesh()->getTris(), m_geom->getMesh()->getNormals(), m_geom->getMesh()->getTriCount(),
-								m_agentMaxSlope, texScale);
+								m_agentMaxSlope, texScale, m_geom->getMesh()->getSurfaceTypes(), true);
 		m_geom->drawOffMeshConnections(&m_dd);
 	}
 	
@@ -380,6 +380,7 @@ bool Sample_SoloMesh::handleBuild()
 	const float* bmin = m_geom->getNavMeshBoundsMin();
 	const float* bmax = m_geom->getNavMeshBoundsMax();
 	const float* verts = m_geom->getMesh()->getVerts();
+	const int* surfTypes = m_geom->getMesh()->getSurfaceTypes();
 	const int nverts = m_geom->getMesh()->getVertCount();
 	const int* tris = m_geom->getMesh()->getTris();
 	const int ntris = m_geom->getMesh()->getTriCount();
@@ -442,6 +443,7 @@ bool Sample_SoloMesh::handleBuild()
 	// If you have multiple meshes you need to process, allocate
 	// and array which can hold the max number of triangles you need to process.
 	m_triareas = new unsigned char[ntris];
+
 	if (!m_triareas)
 	{
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Out of memory 'm_triareas' (%d).", ntris);
@@ -452,7 +454,7 @@ bool Sample_SoloMesh::handleBuild()
 	// If your input data is multiple meshes, you can transform them here, calculate
 	// the are type for each of the meshes and rasterize them.
 	memset(m_triareas, 0, ntris*sizeof(unsigned char));
-	rcMarkWalkableTriangles(m_ctx, m_cfg.walkableSlopeAngle, verts, nverts, tris, ntris, m_triareas);
+	rcMarkWalkableTriangles(m_ctx, m_cfg.walkableSlopeAngle, verts, nverts, tris, ntris, m_triareas, surfTypes);
 	if (!rcRasterizeTriangles(m_ctx, verts, nverts, tris, m_triareas, ntris, *m_solid, m_cfg.walkableClimb))
 	{
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not rasterize triangles.");
@@ -477,7 +479,7 @@ bool Sample_SoloMesh::handleBuild()
 	if (m_filterLedgeSpans)
 		rcFilterLedgeSpans(m_ctx, m_cfg.walkableHeight, m_cfg.walkableClimb, *m_solid);
 	if (m_filterWalkableLowHeightSpans)
-		rcFilterWalkableLowHeightSpans(m_ctx, m_cfg.walkableHeight, *m_solid);
+		rcFilterWalkableLowHeightSpans(m_ctx, m_cfg.walkableHeight, 12, *m_solid);
 
 
 	//
@@ -493,7 +495,7 @@ bool Sample_SoloMesh::handleBuild()
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Out of memory 'chf'.");
 		return false;
 	}
-	if (!rcBuildCompactHeightfield(m_ctx, m_cfg.walkableHeight, m_cfg.walkableClimb, *m_solid, *m_chf))
+	if (!rcBuildCompactHeightfield(m_ctx, 13, m_cfg.walkableClimb, *m_solid, *m_chf))
 	{
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not build compact data.");
 		return false;
@@ -658,6 +660,11 @@ bool Sample_SoloMesh::handleBuild()
 		{
 			if (m_pmesh->areas[i] == RC_WALKABLE_AREA)
 				m_pmesh->areas[i] = SAMPLE_POLYAREA_GROUND;
+
+			if (m_pmesh->areas[i] == RC_CROUCH_AREA)
+			{
+				m_pmesh->areas[i] = SAMPLE_POLYAREA_GRASS;
+			}
 				
 			if (m_pmesh->areas[i] == SAMPLE_POLYAREA_GROUND ||
 				m_pmesh->areas[i] == SAMPLE_POLYAREA_GRASS ||

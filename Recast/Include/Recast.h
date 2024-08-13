@@ -638,6 +638,10 @@ static const unsigned char RC_NULL_AREA = 0;
 /// This is also the maximum allowed area id, and the only non-null area id 
 /// recognized by some steps in the build process. 
 static const unsigned char RC_WALKABLE_AREA = 63;
+static const unsigned char RC_CROUCH_AREA = 2;
+
+static const unsigned char RC_ILLUSIONARY_AREA = 62;
+static const unsigned char RC_AUTOMATIC_AREA = 61;
 
 /// The value returned by #rcGetCon if the specified direction is not connected
 /// to another span. (Has no neighbor.)
@@ -871,7 +875,7 @@ bool rcCreateHeightfield(rcContext* context, rcHeightfield& heightfield, int siz
 /// @param[in]		numTris				The number of triangles.
 /// @param[out]		triAreaIDs			The triangle area ids. [Length: >= @p nt]
 void rcMarkWalkableTriangles(rcContext* context, float walkableSlopeAngle, const float* verts, int numVerts,
-							 const int* tris, int numTris, unsigned char* triAreaIDs); 
+							 const int* tris, int numTris, unsigned char* triAreaIDs, const int* surfTypes);
 
 /// Sets the area id of all triangles with a slope greater than or equal to the specified value to #RC_NULL_AREA.
 /// 
@@ -1052,7 +1056,7 @@ void rcFilterLedgeSpans(rcContext* context, int walkableHeight, int walkableClim
 /// @param[in]		walkableHeight	Minimum floor to 'ceiling' height that will still allow the floor area to 
 /// 								be considered walkable. [Limit: >= 3] [Units: vx]
 /// @param[in,out]	heightfield		A fully built heightfield.  (All spans have been added.)
-void rcFilterWalkableLowHeightSpans(rcContext* context, int walkableHeight, rcHeightfield& heightfield);
+void rcFilterWalkableLowHeightSpans(rcContext* context, int walkableHeight, int crouchHeight, rcHeightfield& heightfield);
 
 /// Returns the number of spans contained in the specified heightfield.
 ///  @ingroup recast

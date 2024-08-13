@@ -72,7 +72,7 @@ Sample::Sample() :
 	m_crowd(0),
 	m_navMeshDrawFlags(DU_DRAWNAVMESH_OFFMESHCONS|DU_DRAWNAVMESH_CLOSEDLIST),
 	m_filterLowHangingObstacles(true),
-	m_filterLedgeSpans(true),
+	m_filterLedgeSpans(false),
 	m_filterWalkableLowHeightSpans(true),
 	m_tool(0),
 	m_ctx(0)
@@ -178,18 +178,18 @@ void Sample::collectSettings(BuildSettings& settings)
 
 void Sample::resetCommonSettings()
 {
-	m_cellSize = 0.3f;
-	m_cellHeight = 0.2f;
-	m_agentHeight = 2.0f;
-	m_agentRadius = 0.6f;
-	m_agentMaxClimb = 0.9f;
-	m_agentMaxSlope = 45.0f;
-	m_regionMinSize = 8;
+	m_cellSize = 3.0f;
+	m_cellHeight = 3.0f;
+	m_agentHeight = 72.0f;
+	m_agentRadius = 16.0f;
+	m_agentMaxClimb = 18.0f;
+	m_agentMaxSlope = 50.0f;
+	m_regionMinSize = 0;
 	m_regionMergeSize = 20;
-	m_edgeMaxLen = 12.0f;
-	m_edgeMaxError = 1.3f;
+	m_edgeMaxLen = 60.0f;
+	m_edgeMaxError = 2.0f;
 	m_vertsPerPoly = 6.0f;
-	m_detailSampleDist = 6.0f;
+	m_detailSampleDist = 16.0f;
 	m_detailSampleMaxError = 1.0f;
 	m_partitionType = SAMPLE_PARTITION_WATERSHED;
 }
@@ -197,8 +197,8 @@ void Sample::resetCommonSettings()
 void Sample::handleCommonSettings()
 {
 	imguiLabel("Rasterization");
-	imguiSlider("Cell Size", &m_cellSize, 0.1f, 1.0f, 0.01f);
-	imguiSlider("Cell Height", &m_cellHeight, 0.1f, 1.0f, 0.01f);
+	imguiSlider("Cell Size", &m_cellSize, 1.0f, 10.0f, 0.1f);
+	imguiSlider("Cell Height", &m_cellHeight, 1.0f, 10.0f, 0.1f);
 	
 	if (m_geom)
 	{
@@ -213,9 +213,9 @@ void Sample::handleCommonSettings()
 	
 	imguiSeparator();
 	imguiLabel("Agent");
-	imguiSlider("Height", &m_agentHeight, 0.1f, 5.0f, 0.1f);
-	imguiSlider("Radius", &m_agentRadius, 0.0f, 5.0f, 0.1f);
-	imguiSlider("Max Climb", &m_agentMaxClimb, 0.1f, 5.0f, 0.1f);
+	imguiSlider("Height", &m_agentHeight, 1.0f, 200.0f, 1.0f);
+	imguiSlider("Radius", &m_agentRadius, 1.0f, 50.0f, 1.0f);
+	imguiSlider("Max Climb", &m_agentMaxClimb, 1.0f, 50.0f, 1.0f);
 	imguiSlider("Max Slope", &m_agentMaxSlope, 0.0f, 90.0f, 1.0f);
 	
 	imguiSeparator();
@@ -249,8 +249,8 @@ void Sample::handleCommonSettings()
 
 	imguiSeparator();
 	imguiLabel("Detail Mesh");
-	imguiSlider("Sample Distance", &m_detailSampleDist, 0.0f, 16.0f, 1.0f);
-	imguiSlider("Max Sample Error", &m_detailSampleMaxError, 0.0f, 16.0f, 1.0f);
+	imguiSlider("Sample Distance", &m_detailSampleDist, 0.0f, 32.0f, 1.0f);
+	imguiSlider("Max Sample Error", &m_detailSampleMaxError, 0.0f, 32.0f, 1.0f);
 	
 	imguiSeparator();
 }

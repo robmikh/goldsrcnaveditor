@@ -360,11 +360,12 @@ int Sample_TempObstacles::rasterizeTileLayers(
 	{
 		const rcChunkyTriMeshNode& node = chunkyMesh->nodes[cid[i]];
 		const int* tris = &chunkyMesh->tris[node.i*3];
+		const int* surfTypes = &chunkyMesh->surfTypes[node.i * 3];
 		const int ntris = node.n;
 		
 		memset(rc.triareas, 0, ntris*sizeof(unsigned char));
 		rcMarkWalkableTriangles(m_ctx, tcfg.walkableSlopeAngle,
-								verts, nverts, tris, ntris, rc.triareas);
+								verts, nverts, tris, ntris, rc.triareas, surfTypes);
 		
 		if (!rcRasterizeTriangles(m_ctx, verts, nverts, tris, rc.triareas, ntris, *rc.solid, tcfg.walkableClimb))
 			return 0;
@@ -378,7 +379,7 @@ int Sample_TempObstacles::rasterizeTileLayers(
 	if (m_filterLedgeSpans)
 		rcFilterLedgeSpans(m_ctx, tcfg.walkableHeight, tcfg.walkableClimb, *rc.solid);
 	if (m_filterWalkableLowHeightSpans)
-		rcFilterWalkableLowHeightSpans(m_ctx, tcfg.walkableHeight, *rc.solid);
+		rcFilterWalkableLowHeightSpans(m_ctx, tcfg.walkableHeight, 13, *rc.solid);
 	
 	
 	rc.chf = rcAllocCompactHeightfield();
@@ -394,11 +395,11 @@ int Sample_TempObstacles::rasterizeTileLayers(
 	}
 	
 	// Erode the walkable area by agent radius.
-	if (!rcErodeWalkableArea(m_ctx, tcfg.walkableRadius, *rc.chf))
-	{
-		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not erode.");
-		return 0;
-	}
+	//if (!rcErodeWalkableArea(m_ctx, tcfg.walkableRadius, *rc.chf))
+	//{
+	//	m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not erode.");
+	//	return 0;
+	//}
 	
 	// (Optional) Mark areas.
 	const ConvexVolume* vols = m_geom->getConvexVolumes();
@@ -1053,7 +1054,7 @@ void Sample_TempObstacles::handleRender()
 		// Draw mesh
 		duDebugDrawTriMeshSlope(&m_dd, m_geom->getMesh()->getVerts(), m_geom->getMesh()->getVertCount(),
 								m_geom->getMesh()->getTris(), m_geom->getMesh()->getNormals(), m_geom->getMesh()->getTriCount(),
-								m_agentMaxSlope, texScale);
+								m_agentMaxSlope, texScale, m_geom->getMesh()->getSurfaceTypes(), true);
 		m_geom->drawOffMeshConnections(&m_dd);
 	}
 	

@@ -431,7 +431,7 @@ void Sample_TileMesh::handleRender()
 		// Draw mesh
 		duDebugDrawTriMeshSlope(&m_dd, m_geom->getMesh()->getVerts(), m_geom->getMesh()->getVertCount(),
 								m_geom->getMesh()->getTris(), m_geom->getMesh()->getNormals(), m_geom->getMesh()->getTriCount(),
-								m_agentMaxSlope, texScale);
+								m_agentMaxSlope, texScale, m_geom->getMesh()->getSurfaceTypes(), true);
 		m_geom->drawOffMeshConnections(&m_dd);
 	}
 		
@@ -805,6 +805,7 @@ unsigned char* Sample_TileMesh::buildTileMesh(const int tx, const int ty, const 
 	cleanup();
 	
 	const float* verts = m_geom->getMesh()->getVerts();
+	const int* surfTypes = m_geom->getMesh()->getSurfaceTypes();
 	const int nverts = m_geom->getMesh()->getVertCount();
 	const int ntris = m_geom->getMesh()->getTriCount();
 	const rcChunkyTriMesh* chunkyMesh = m_geom->getChunkyMesh();
@@ -912,7 +913,7 @@ unsigned char* Sample_TileMesh::buildTileMesh(const int tx, const int ty, const 
 		
 		memset(m_triareas, 0, nctris*sizeof(unsigned char));
 		rcMarkWalkableTriangles(m_ctx, m_cfg.walkableSlopeAngle,
-								verts, nverts, ctris, nctris, m_triareas);
+								verts, nverts, ctris, nctris, m_triareas, surfTypes);
 		
 		if (!rcRasterizeTriangles(m_ctx, verts, nverts, ctris, m_triareas, nctris, *m_solid, m_cfg.walkableClimb))
 			return 0;
@@ -932,7 +933,7 @@ unsigned char* Sample_TileMesh::buildTileMesh(const int tx, const int ty, const 
 	if (m_filterLedgeSpans)
 		rcFilterLedgeSpans(m_ctx, m_cfg.walkableHeight, m_cfg.walkableClimb, *m_solid);
 	if (m_filterWalkableLowHeightSpans)
-		rcFilterWalkableLowHeightSpans(m_ctx, m_cfg.walkableHeight, *m_solid);
+		rcFilterWalkableLowHeightSpans(m_ctx, m_cfg.walkableHeight, 13, *m_solid);
 	
 	// Compact the heightfield so that it is faster to handle from now on.
 	// This will result more cache coherent data as well as the neighbours
@@ -943,7 +944,7 @@ unsigned char* Sample_TileMesh::buildTileMesh(const int tx, const int ty, const 
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Out of memory 'chf'.");
 		return 0;
 	}
-	if (!rcBuildCompactHeightfield(m_ctx, m_cfg.walkableHeight, m_cfg.walkableClimb, *m_solid, *m_chf))
+	if (!rcBuildCompactHeightfield(m_ctx, 13, m_cfg.walkableClimb, *m_solid, *m_chf))
 	{
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not build compact data.");
 		return 0;
@@ -1099,7 +1100,7 @@ unsigned char* Sample_TileMesh::buildTileMesh(const int tx, const int ty, const 
 		// Update poly flags from areas.
 		for (int i = 0; i < m_pmesh->npolys; ++i)
 		{
-			if (m_pmesh->areas[i] == RC_WALKABLE_AREA)
+			if (m_pmesh->areas[i] == RC_WALKABLE_AREA || m_pmesh->areas[i] == RC_CROUCH_AREA)
 				m_pmesh->areas[i] = SAMPLE_POLYAREA_GROUND;
 			
 			if (m_pmesh->areas[i] == SAMPLE_POLYAREA_GROUND ||

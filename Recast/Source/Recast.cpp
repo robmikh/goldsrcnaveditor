@@ -336,7 +336,7 @@ static void calcTriNormal(const float* v0, const float* v1, const float* v2, flo
 void rcMarkWalkableTriangles(rcContext* context, const float walkableSlopeAngle,
                              const float* verts, const int numVerts,
                              const int* tris, const int numTris,
-                             unsigned char* triAreaIDs)
+                             unsigned char* triAreaIDs, const int* surfTypes)
 {
 	rcIgnoreUnused(context);
 	rcIgnoreUnused(numVerts);
@@ -349,6 +349,13 @@ void rcMarkWalkableTriangles(rcContext* context, const float walkableSlopeAngle,
 	{
 		const int* tri = &tris[i * 3];
 		calcTriNormal(&verts[tri[0] * 3], &verts[tri[1] * 3], &verts[tri[2] * 3], norm);
+
+		if (surfTypes[i] == 62)
+		{ 
+			triAreaIDs[i] = RC_ILLUSIONARY_AREA;
+			continue;
+		}
+
 		// Check if the face is walkable.
 		if (norm[1] > walkableThr)
 		{

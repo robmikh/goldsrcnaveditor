@@ -282,7 +282,7 @@ TEST_CASE("rcFilterWalkableLowHeightSpans", "[recast, filtering]")
 		span->smax = 1;
 		heightfield.spans[0] = span;
 
-		rcFilterWalkableLowHeightSpans(&context, walkableHeight, heightfield);
+		rcFilterWalkableLowHeightSpans(&context, walkableHeight, 3, heightfield);
 
 		REQUIRE(heightfield.spans[0]->area == 1);
 
@@ -304,7 +304,7 @@ TEST_CASE("rcFilterWalkableLowHeightSpans", "[recast, filtering]")
 		span->smax = 1;
 		heightfield.spans[0] = span;
 
-		rcFilterWalkableLowHeightSpans(&context, walkableHeight, heightfield);
+		rcFilterWalkableLowHeightSpans(&context, walkableHeight, 3, heightfield);
 
 		REQUIRE(heightfield.spans[0]->area == 1);
 		REQUIRE(heightfield.spans[0]->next->area == RC_NULL_AREA);
@@ -328,7 +328,7 @@ TEST_CASE("rcFilterWalkableLowHeightSpans", "[recast, filtering]")
 		span->smax = 1;
 		heightfield.spans[0] = span;
 
-		rcFilterWalkableLowHeightSpans(&context, walkableHeight, heightfield);
+		rcFilterWalkableLowHeightSpans(&context, walkableHeight, 3, heightfield);
 
 		REQUIRE(heightfield.spans[0]->area == RC_NULL_AREA);
 		REQUIRE(heightfield.spans[0]->next->area == RC_NULL_AREA);

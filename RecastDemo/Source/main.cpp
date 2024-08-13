@@ -147,6 +147,7 @@ int main(int /*argc*/, char** /*argv*/)
 	float moveFront = 0.0f, moveBack = 0.0f, moveLeft = 0.0f, moveRight = 0.0f, moveUp = 0.0f, moveDown = 0.0f;
 	
 	float scrollZoom = 0;
+	float maxCameraMoveSpeed = 3000.0f;
 	bool rotate = false;
 	bool movedDuringRotate = false;
 	float rayStart[3];
@@ -261,7 +262,8 @@ int main(int /*argc*/, char** /*argv*/)
 						}
 						else
 						{
-							scrollZoom += 1.0f;
+							maxCameraMoveSpeed -= 200.0f;
+							maxCameraMoveSpeed = rcClamp(maxCameraMoveSpeed, 1.0f, 5000.0f);
 						}
 					}
 					else
@@ -272,7 +274,8 @@ int main(int /*argc*/, char** /*argv*/)
 						}
 						else
 						{
-							scrollZoom -= 1.0f;
+							maxCameraMoveSpeed += 200.0f;
+							maxCameraMoveSpeed = rcClamp(maxCameraMoveSpeed, 1.0f, 5000.0f);
 						}
 					}
 					break;
@@ -454,12 +457,10 @@ int main(int /*argc*/, char** /*argv*/)
 		
 		// Handle keyboard movement.
 		const Uint8* keystate = SDL_GetKeyboardState(NULL);
-		moveFront	= rcClamp(moveFront	+ dt * 4 * ((keystate[SDL_SCANCODE_W] || keystate[SDL_SCANCODE_UP		]) ? 1 : -1), 0.0f, 1.0f);
-		moveLeft	= rcClamp(moveLeft	+ dt * 4 * ((keystate[SDL_SCANCODE_A] || keystate[SDL_SCANCODE_LEFT		]) ? 1 : -1), 0.0f, 1.0f);
-		moveBack	= rcClamp(moveBack	+ dt * 4 * ((keystate[SDL_SCANCODE_S] || keystate[SDL_SCANCODE_DOWN		]) ? 1 : -1), 0.0f, 1.0f);
-		moveRight	= rcClamp(moveRight	+ dt * 4 * ((keystate[SDL_SCANCODE_D] || keystate[SDL_SCANCODE_RIGHT	]) ? 1 : -1), 0.0f, 1.0f);
-		moveUp		= rcClamp(moveUp	+ dt * 4 * ((keystate[SDL_SCANCODE_Q] || keystate[SDL_SCANCODE_PAGEUP	]) ? 1 : -1), 0.0f, 1.0f);
-		moveDown	= rcClamp(moveDown	+ dt * 4 * ((keystate[SDL_SCANCODE_E] || keystate[SDL_SCANCODE_PAGEDOWN	]) ? 1 : -1), 0.0f, 1.0f);
+		moveFront = (maxCameraMoveSpeed * dt) * ((keystate[SDL_SCANCODE_W] || keystate[SDL_SCANCODE_UP]) ? 1 : 0);
+		moveLeft = (maxCameraMoveSpeed * dt) * ((keystate[SDL_SCANCODE_A] || keystate[SDL_SCANCODE_LEFT]) ? 1 : 0);
+		moveBack = (maxCameraMoveSpeed * dt) * ((keystate[SDL_SCANCODE_S] || keystate[SDL_SCANCODE_DOWN]) ? 1 : 0);
+		moveRight = (maxCameraMoveSpeed * dt) * ((keystate[SDL_SCANCODE_D] || keystate[SDL_SCANCODE_RIGHT]) ? 1 : 0);
 		
 		float keybSpeed = 22.0f;
 		if (SDL_GetModState() & KMOD_SHIFT)
@@ -546,7 +547,7 @@ int main(int /*argc*/, char** /*argv*/)
 			}
 			
 			imguiSeparator();
-			imguiLabel("Input Mesh");
+			imguiLabel("Input Map");
 			if (imguiButton(meshName.c_str()))
 			{
 				if (showLevels)
@@ -558,8 +559,7 @@ int main(int /*argc*/, char** /*argv*/)
 					showSample = false;
 					showTestCases = false;
 					showLevels = true;
-					scanDirectory(meshesFolder, ".obj", files);
-					scanDirectoryAppend(meshesFolder, ".gset", files);
+					scanDirectory(meshesFolder, ".bsp", files);
 				}
 			}
 			if (geom)
@@ -689,7 +689,16 @@ int main(int /*argc*/, char** /*argv*/)
 				delete geom;
 				geom = 0;
 				
-				string path = meshesFolder + "/" + meshName;
+				string path;
+
+				if (meshesFolder.length() > 0)
+				{
+					path = meshesFolder + "/" + meshName;
+				}
+				else
+				{
+					path = meshName;
+				}
 				
 				geom = new InputGeom;
 				if (!geom->load(&ctx, path))

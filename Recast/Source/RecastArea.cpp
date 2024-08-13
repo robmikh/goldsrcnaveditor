@@ -111,19 +111,47 @@ bool rcErodeWalkableArea(rcContext* context, const int erosionRadius, rcCompactH
 				for (int direction = 0; direction < 4; ++direction)
 				{
 					const int neighborConnection = rcGetCon(span, direction);
-					if (neighborConnection == RC_NOT_CONNECTED)
-					{
-						break;
-					}
 					
 					const int neighborX = x + rcGetDirOffsetX(direction);
 					const int neighborZ = z + rcGetDirOffsetY(direction);
 					const int neighborSpanIndex = (int)compactHeightfield.cells[neighborX + neighborZ * zStride].index + neighborConnection;
+
+					const int neighborStartSpanIndex = (int)compactHeightfield.cells[neighborX + neighborZ * zStride].index;
 					
+					rcCompactSpan s = compactHeightfield.spans[spanIndex];
+					rcCompactCell nc = compactHeightfield.cells[neighborX + neighborZ * zStride];
+
+					// Don't stray off the edge of the height field
+					if ((direction == 0 && x == 0) || (direction == 1 && z == zSize - 1) || (direction == 2 && x == xSize - 1) || (direction == 3 && z == 0)) { break; }
+
 					if (compactHeightfield.areas[neighborSpanIndex] == RC_NULL_AREA)
 					{
 						break;
 					}
+
+					if (neighborConnection == RC_NOT_CONNECTED)
+					{
+						bool bOnLedge = false;
+
+						for (int nSpanIndex = (int)nc.index, nmaxSpanIndex = (int)(nc.index + nc.count); nSpanIndex < nmaxSpanIndex; ++nSpanIndex)
+						{
+							rcCompactSpan ns = compactHeightfield.spans[nSpanIndex];
+
+							if (compactHeightfield.areas[nSpanIndex] != RC_NULL_AREA)
+							{
+								if ((int)((int)s.y - (int)ns.y) > (int)compactHeightfield.walkableClimb && (int)(((int)ns.y + (int)ns.h) - (int)s.y) > (int)compactHeightfield.walkableHeight)
+								{
+									bOnLedge = true;
+								}
+							}
+						}
+
+						if (!bOnLedge)
+						{
+							break;
+						}
+					}
+
 					neighborCount++;
 				}
 				

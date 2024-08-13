@@ -97,6 +97,7 @@ class InputGeom
 	///@}
 	
 	bool loadMesh(class rcContext* ctx, const std::string& filepath);
+	bool loadBSP(class rcContext* ctx, const std::string& filepath);
 	bool loadGeomSet(class rcContext* ctx, const std::string& filepath);
 public:
 	InputGeom();
@@ -112,6 +113,8 @@ public:
 	const float* getMeshBoundsMax() const { return m_meshBMax; }
 	const float* getNavMeshBoundsMin() const { return m_hasBuildSettings ? m_buildSettings.navMeshBMin : m_meshBMin; }
 	const float* getNavMeshBoundsMax() const { return m_hasBuildSettings ? m_buildSettings.navMeshBMax : m_meshBMax; }
+	inline const int* getSurfaceTypes() const { if (m_mesh) { return m_mesh->getSurfaceTypes(); } return nullptr; }
+	inline const int getSurfaceTypeCount() const { if (m_mesh) { return m_mesh->getSurfaceTypeCount(); } return 0; }
 	const rcChunkyTriMesh* getChunkyMesh() const { return m_chunkyMesh; }
 	const BuildSettings* getBuildSettings() const { return m_hasBuildSettings ? &m_buildSettings : 0; }
 	bool raycastMesh(float* src, float* dst, float& tmin);

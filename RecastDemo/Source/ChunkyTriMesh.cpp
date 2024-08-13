@@ -78,7 +78,7 @@ inline int longestAxis(float x, float y)
 
 static void subdivide(BoundsItem* items, int nitems, int imin, int imax, int trisPerChunk,
 					  int& curNode, rcChunkyTriMeshNode* nodes, const int maxNodes,
-					  int& curTri, int* outTris, const int* inTris)
+					  int& curTri, int* outTris, const int* inTris, int* outSurfTypes, const int* inSurfTypes)
 {
 	int inum = imax - imin;
 	int icur = curNode;
@@ -101,6 +101,8 @@ static void subdivide(BoundsItem* items, int nitems, int imin, int imax, int tri
 		{
 			const int* src = &inTris[items[i].i*3];
 			int* dst = &outTris[curTri*3];
+			outSurfTypes[curTri] = inSurfTypes[items[i].i];
+
 			curTri++;
 			dst[0] = src[0];
 			dst[1] = src[1];
@@ -129,9 +131,9 @@ static void subdivide(BoundsItem* items, int nitems, int imin, int imax, int tri
 		int isplit = imin+inum/2;
 		
 		// Left
-		subdivide(items, nitems, imin, isplit, trisPerChunk, curNode, nodes, maxNodes, curTri, outTris, inTris);
+		subdivide(items, nitems, imin, isplit, trisPerChunk, curNode, nodes, maxNodes, curTri, outTris, inTris, outSurfTypes, inSurfTypes);
 		// Right
-		subdivide(items, nitems, isplit, imax, trisPerChunk, curNode, nodes, maxNodes, curTri, outTris, inTris);
+		subdivide(items, nitems, isplit, imax, trisPerChunk, curNode, nodes, maxNodes, curTri, outTris, inTris, outSurfTypes, inSurfTypes);
 		
 		int iescape = curNode - icur;
 		// Negative index means escape.
@@ -140,7 +142,7 @@ static void subdivide(BoundsItem* items, int nitems, int imin, int imax, int tri
 }
 
 bool rcCreateChunkyTriMesh(const float* verts, const int* tris, int ntris,
-						   int trisPerChunk, rcChunkyTriMesh* cm)
+						   int trisPerChunk, rcChunkyTriMesh* cm, const int* surfTypes)
 {
 	int nchunks = (ntris + trisPerChunk-1) / trisPerChunk;
 
@@ -149,6 +151,7 @@ bool rcCreateChunkyTriMesh(const float* verts, const int* tris, int ntris,
 		return false;
 		
 	cm->tris = new int[ntris*3];
+	cm->surfTypes = new int[ntris];
 	if (!cm->tris)
 		return false;
 		
@@ -180,7 +183,7 @@ bool rcCreateChunkyTriMesh(const float* verts, const int* tris, int ntris,
 
 	int curTri = 0;
 	int curNode = 0;
-	subdivide(items, ntris, 0, ntris, trisPerChunk, curNode, cm->nodes, nchunks*4, curTri, cm->tris, tris);
+	subdivide(items, ntris, 0, ntris, trisPerChunk, curNode, cm->nodes, nchunks*4, curTri, cm->tris, tris, cm->surfTypes, surfTypes);
 	
 	delete [] items;
 	
