@@ -110,6 +110,9 @@ bool rcErodeWalkableArea(rcContext* context, const int erosionRadius, rcCompactH
 				int neighborCount = 0;
 				for (int direction = 0; direction < 4; ++direction)
 				{
+					// Don't stray off the edge of the height field
+					if ((direction == 0 && x == 0) || (direction == 1 && z == zSize - 1) || (direction == 2 && x == xSize - 1) || (direction == 3 && z == 0)) { break; }
+
 					const int neighborConnection = rcGetCon(span, direction);
 					
 					const int neighborX = x + rcGetDirOffsetX(direction);
@@ -121,8 +124,7 @@ bool rcErodeWalkableArea(rcContext* context, const int erosionRadius, rcCompactH
 					rcCompactSpan s = compactHeightfield.spans[spanIndex];
 					rcCompactCell nc = compactHeightfield.cells[neighborX + neighborZ * zStride];
 
-					// Don't stray off the edge of the height field
-					if ((direction == 0 && x == 0) || (direction == 1 && z == zSize - 1) || (direction == 2 && x == xSize - 1) || (direction == 3 && z == 0)) { break; }
+					
 
 					if (compactHeightfield.areas[neighborSpanIndex] == RC_NULL_AREA)
 					{

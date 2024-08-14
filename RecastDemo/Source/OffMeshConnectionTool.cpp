@@ -35,6 +35,8 @@
 #include "RecastDebugDraw.h"
 #include "DetourDebugDraw.h"
 
+#include "NavProfiles.h"
+
 #ifdef WIN32
 #	define snprintf _snprintf
 #endif
@@ -76,6 +78,21 @@ void OffMeshConnectionTool::handleMenu()
 		m_bidir = false;
 	if (imguiCheck("Bidirectional", m_bidir))
 		m_bidir = true;
+
+	imguiSeparator();
+
+	vector<NavOffMeshConnectionDefinition> AllConnectionTypes = GetAllConnectionDefinitions();
+
+	int thisIndex = 0;
+
+	for (auto it = AllConnectionTypes.begin(); it != AllConnectionTypes.end(); it++)
+	{
+		if (imguiCheck(it->ConnName.c_str(), m_connIndex == thisIndex))
+		{
+			m_connIndex = thisIndex;
+		}
+		thisIndex++;
+	}
 }
 
 void OffMeshConnectionTool::handleClick(const float* /*s*/, const float* p, bool shift)
@@ -86,27 +103,7 @@ void OffMeshConnectionTool::handleClick(const float* /*s*/, const float* p, bool
 
 	if (shift)
 	{
-		// Delete
-		// Find nearest link end-point
-		float nearestDist = FLT_MAX;
-		int nearestIndex = -1;
-		const float* verts = geom->getOffMeshConnectionVerts();
-		for (int i = 0; i < geom->getOffMeshConnectionCount()*2; ++i)
-		{
-			const float* v = &verts[i*3];
-			float d = rcVdistSqr(p, v);
-			if (d < nearestDist)
-			{
-				nearestDist = d;
-				nearestIndex = i/2; // Each link has two vertices.
-			}
-		}
-		// If end point close enough, delete it.
-		if (nearestIndex != -1 &&
-			sqrtf(nearestDist) < m_sample->getAgentRadius())
-		{
-			geom->deleteOffMeshConnection(nearestIndex);
-		}
+		m_sample->removeOffMeshConnection(p);
 	}
 	else
 	{
@@ -118,9 +115,20 @@ void OffMeshConnectionTool::handleClick(const float* /*s*/, const float* p, bool
 		}
 		else
 		{
-			const unsigned char area = SAMPLE_POLYAREA_JUMP;
-			const unsigned short flags = SAMPLE_POLYFLAGS_JUMP; 
-			geom->addOffMeshConnection(m_hitPos, p, m_sample->getAgentRadius(), m_bidir ? 1 : 0, area, flags);
+			NavOffMeshConnectionDefinition* SelectedConnectionType = GetConnectionAtIndex(m_connIndex);
+
+			if (!SelectedConnectionType)
+			{
+				m_connIndex = 0;
+				return;
+			}
+
+			NavAreaDefinition* ConnArea = GetAreaAtIndex(SelectedConnectionType->AreaIndex);
+			NavFlagDefinition* ConnFlag = GetFlagAtIndex(SelectedConnectionType->FlagIndex);
+
+			if (!ConnArea || !ConnFlag) { return; }
+
+			m_sample->addOffMeshConnection(m_hitPos, p, m_sample->getAgentRadius(), m_bidir ? 1 : 0, ConnArea->AreaId, ConnFlag->FlagId);
 			m_hitPosSet = false;
 		}
 	}
@@ -147,9 +155,10 @@ void OffMeshConnectionTool::handleRender()
 	if (m_hitPosSet)
 		duDebugDrawCross(&dd, m_hitPos[0],m_hitPos[1]+0.1f,m_hitPos[2], s, duRGBA(0,0,0,128), 2.0f);
 
-	InputGeom* geom = m_sample->getInputGeom();
-	if (geom)
-		geom->drawOffMeshConnections(&dd, true);
+	if (m_sample)
+	{
+		m_sample->drawOffMeshConnections(&dd);
+	}
 }
 
 void OffMeshConnectionTool::handleRenderOverlay(double* proj, double* model, int* view)

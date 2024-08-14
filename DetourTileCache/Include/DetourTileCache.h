@@ -2,9 +2,11 @@
 #define DETOURTILECACHE_H
 
 #include "DetourStatus.h"
+#include "DetourNavMesh.h"
 
 typedef unsigned int dtObstacleRef;
 typedef unsigned int dtCompressedTileRef;
+typedef unsigned int dtOffMeshConnectionRef;
 
 /// Flags for addTile
 enum dtCompressedTileFlags
@@ -90,12 +92,13 @@ struct dtTileCacheParams
 	float maxSimplificationError;
 	int maxTiles;
 	int maxObstacles;
+	int maxOffMeshConnections;
 };
 
 struct dtTileCacheMeshProcess
 {
 	virtual ~dtTileCacheMeshProcess();
-	virtual void process(struct dtNavMeshCreateParams* params, unsigned char* polyAreas, unsigned short* polyFlags) = 0;
+	virtual void process(struct dtNavMeshCreateParams* params, unsigned char* polyAreas, unsigned int* polyFlags) = 0;
 };
 
 class dtTileCache
@@ -111,12 +114,15 @@ public:
 	inline int getTileCount() const { return m_params.maxTiles; }
 	inline const dtCompressedTile* getTile(const int i) const { return &m_tiles[i]; }
 	
+	inline int getOffMeshCount() const { return m_params.maxOffMeshConnections; }
 	inline int getObstacleCount() const { return m_params.maxObstacles; }
 	inline const dtTileCacheObstacle* getObstacle(const int i) const { return &m_obstacles[i]; }
+	inline dtOffMeshConnection* getOffMeshConnection(const int i) const { return &m_offMeshConnections[i]; }
 	
 	const dtTileCacheObstacle* getObstacleByRef(dtObstacleRef ref);
 	
 	dtObstacleRef getObstacleRef(const dtTileCacheObstacle* obmin) const;
+	dtOffMeshConnectionRef getOffMeshRef(const dtOffMeshConnection* con) const;
 	
 	dtStatus init(const dtTileCacheParams* params,
 				  struct dtTileCacheAlloc* talloc,
@@ -143,6 +149,9 @@ public:
 	dtStatus addBoxObstacle(const float* center, const float* halfExtents, const float yRadians, dtObstacleRef* result);
 	
 	dtStatus removeObstacle(const dtObstacleRef ref);
+	dtStatus removeOffMeshConnection(const dtOffMeshConnectionRef ref);
+
+	dtStatus addOffMeshConnection(const float* spos, const float* epos, const float radius, const unsigned char area, const unsigned int flags, const bool bBiDirectional, dtOffMeshConnectionRef* result);
 	
 	dtStatus queryTiles(const float* bmin, const float* bmax,
 						dtCompressedTileRef* results, int* resultCount, const int maxResults) const;
@@ -189,6 +198,12 @@ public:
 	{
 		return ((dtObstacleRef)salt << 16) | (dtObstacleRef)it;
 	}
+
+	/// Encodes an obstacle id.
+	inline dtOffMeshConnectionRef encodeOffMeshId(unsigned int salt, unsigned int it) const
+	{
+		return ((dtOffMeshConnectionRef)salt << 16) | (dtOffMeshConnectionRef)it;
+	}
 	
 	/// Decodes an obstacle salt.
 	inline unsigned int decodeObstacleIdSalt(dtObstacleRef ref) const
@@ -196,11 +211,23 @@ public:
 		const dtObstacleRef saltMask = ((dtObstacleRef)1<<16)-1;
 		return (unsigned int)((ref >> 16) & saltMask);
 	}
+
+	inline unsigned int decodeOffMeshIdSalt(dtOffMeshConnectionRef ref) const
+	{
+		const dtOffMeshConnectionRef saltMask = ((dtOffMeshConnectionRef)1 << 16) - 1;
+		return (unsigned int)((ref >> 16) & saltMask);
+	}
 	
 	/// Decodes an obstacle id.
 	inline unsigned int decodeObstacleIdObstacle(dtObstacleRef ref) const
 	{
 		const dtObstacleRef tileMask = ((dtObstacleRef)1<<16)-1;
+		return (unsigned int)(ref & tileMask);
+	}
+
+	inline unsigned int decodeOffMeshIdCon(dtOffMeshConnectionRef ref) const
+	{
+		const dtOffMeshConnectionRef tileMask = ((dtOffMeshConnectionRef)1 << 16) - 1;
 		return (unsigned int)(ref & tileMask);
 	}
 	
@@ -215,11 +242,24 @@ private:
 		REQUEST_ADD,
 		REQUEST_REMOVE
 	};
+
+	enum OffMeshRequestAction
+	{
+		REQUEST_OFFMESH_ADD,
+		REQUEST_OFFMESH_REFRESH,
+		REQUEST_OFFMESH_REMOVE
+	};
 	
 	struct ObstacleRequest
 	{
 		int action;
 		dtObstacleRef ref;
+	};
+
+	struct OffMeshRequest
+	{
+		int action;
+		dtOffMeshConnectionRef ref;
 	};
 	
 	int m_tileLutSize;						///< Tile hash lookup size (must be pot).
@@ -240,10 +280,16 @@ private:
 	
 	dtTileCacheObstacle* m_obstacles;
 	dtTileCacheObstacle* m_nextFreeObstacle;
+
+	dtOffMeshConnection* m_offMeshConnections;
+	dtOffMeshConnection* m_nextFreeOffMeshConnection;
 	
 	static const int MAX_REQUESTS = 64;
 	ObstacleRequest m_reqs[MAX_REQUESTS];
 	int m_nreqs;
+
+	OffMeshRequest m_OffMeshReqs[MAX_REQUESTS];
+	int m_nOffMeshReqs;
 	
 	static const int MAX_UPDATE = 64;
 	dtCompressedTileRef m_update[MAX_UPDATE];

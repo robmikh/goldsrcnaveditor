@@ -4,7 +4,6 @@
 
 using std::vector;
 
-vector<NavOffMeshConnectionDefinition> NavConnectionDefinitions;
 vector<NavGameProfile> NavGameProfiles;
 
 unsigned int CurrentGameProfileIndex = 0;
@@ -17,10 +16,6 @@ int ConnFlagModifier = -1;
 int ProfileMeshModifier = -1;
 int ProfileModifier = 0;
 
-vector<NavOffMeshConnectionDefinition> GetAllConnectionDefinitions()
-{
-	return NavConnectionDefinitions;
-}
 
 unsigned int GetCurrentGameProfileIndex()
 {
@@ -385,6 +380,15 @@ vector<NavFlagDefinition> GetAllNavFlagDefinitions()
 	if (!CurrentProfile) { return vector<NavFlagDefinition>(); }
 
 	return CurrentProfile->FlagDefinitions;
+}
+
+vector<NavOffMeshConnectionDefinition> GetAllConnectionDefinitions()
+{
+	NavGameProfile* CurrentProfile = GetCurrentGameProfile();
+
+	if (!CurrentProfile) { return vector<NavOffMeshConnectionDefinition>(); }
+
+	return CurrentProfile->ConnectionDefinitions;
 }
 
 vector<NavMeshDefinition> GetAllMeshDefinitions()

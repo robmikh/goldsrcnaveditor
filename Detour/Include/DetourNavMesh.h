@@ -149,6 +149,15 @@ enum dtPolyTypes
 	DT_POLYTYPE_OFFMESH_CONNECTION = 1
 };
 
+enum OffMeshState
+{
+	DT_OFFMESH_EMPTY,
+	DT_OFFMESH_NEW,
+	DT_OFFMESH_DIRTY,
+	DT_OFFMESH_CLEAN,
+	DT_OFFMESH_REMOVING,
+};
+
 
 /// Defines a polygon within a dtMeshTile object.
 /// @ingroup detour
@@ -165,7 +174,7 @@ struct dtPoly
 	unsigned short neis[DT_VERTS_PER_POLYGON];
 
 	/// The user defined polygon flags.
-	unsigned short flags;
+	unsigned int flags;
 
 	/// The number of vertices in the polygon.
 	unsigned char vertCount;
@@ -207,6 +216,7 @@ struct dtLink
 	unsigned char side;				///< If a boundary link, defines on which side the link is.
 	unsigned char bmin;				///< If a boundary link, defines the minimum sub-edge area.
 	unsigned char bmax;				///< If a boundary link, defines the maximum sub-edge area.
+	int OffMeshID = -1;				///< If an off-mesh connection, this will be the UserID of the connection that made this link
 };
 
 /// Bounding volume node.
@@ -224,24 +234,45 @@ struct dtBVNode
 struct dtOffMeshConnection
 {
 	/// The endpoints of the connection. [(ax, ay, az, bx, by, bz)]
-	float pos[6];
+	float pos[6] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 
 	/// The radius of the endpoints. [Limit: >= 0]
-	float rad;		
+	float rad = 0.0f;
 
 	/// The polygon reference of the connection within the tile.
-	unsigned short poly;
+	unsigned short poly = 0;
 
 	/// Link flags. 
 	/// @note These are not the connection's user defined flags. Those are assigned via the 
 	/// connection's dtPoly definition. These are link flags used for internal purposes.
-	unsigned char flags;
+	unsigned int flags = 0;
+	unsigned char area = 0;
 
 	/// End point side.
-	unsigned char side;
+	unsigned char side = 0;
+
+	bool bBiDir = false;
 
 	/// The id of the offmesh connection. (User assigned when the navigation mesh is built.)
-	unsigned int userId;
+	unsigned int userId = 0;
+
+	int FromTileX = -1;
+	int FromTileY = -1;
+	int FromTileLayer = -1;
+
+	int ToTileX = -1;
+	int ToTileY = -1;
+	int ToTileLayer = -1;
+
+	bool bPendingDelete = false; // This off-mesh needs to be removed completely
+	bool bDirty = false; // This off-mesh connection has had its from or to tile rebuilt recently so the links need to be re-established
+	bool bBased = false; // This off-mesh connection has had its links based in the source tile
+
+	dtOffMeshConnection* next = nullptr;
+	OffMeshState state = DT_OFFMESH_EMPTY;
+
+	unsigned short salt;
+
 };
 
 /// Provides high level information related to a dtMeshTile object.
@@ -392,7 +423,7 @@ public:
 	///  @param[in]	y		The tile's y-location. (x, y, layer)
 	///  @param[in]	layer	The tile's layer. (x, y, layer)
 	/// @return The tile, or null if the tile does not exist.
-	const dtMeshTile* getTileAt(const int x, const int y, const int layer) const;
+	dtMeshTile* getTileAt(const int x, const int y, const int layer) const;
 
 	/// Gets all tiles at the specified grid location. (All layers.)
 	///  @param[in]		x			The tile's x-location. (x, y)
@@ -476,13 +507,13 @@ public:
 	///  @param[in]	ref		The polygon reference.
 	///  @param[in]	flags	The new flags for the polygon.
 	/// @return The status flags for the operation.
-	dtStatus setPolyFlags(dtPolyRef ref, unsigned short flags);
+	dtStatus setPolyFlags(dtPolyRef ref, unsigned int flags);
 
 	/// Gets the user defined flags for the specified polygon.
 	///  @param[in]		ref				The polygon reference.
 	///  @param[out]	resultFlags		The polygon flags.
 	/// @return The status flags for the operation.
-	dtStatus getPolyFlags(dtPolyRef ref, unsigned short* resultFlags) const;
+	dtStatus getPolyFlags(dtPolyRef ref, unsigned int* resultFlags) const;
 
 	/// Sets the user defined area for the specified polygon.
 	///  @param[in]	ref		The polygon reference.
@@ -605,6 +636,10 @@ public:
 		return (unsigned int)(ref & polyMask);
 #endif
 	}
+
+	void unconnectOffMeshLink(const dtOffMeshConnection* con);
+	void baseOffMeshLinks(dtOffMeshConnection* Connection);
+	void GlobalOffMeshLinks(dtOffMeshConnection* con);
 
 	/// @}
 	

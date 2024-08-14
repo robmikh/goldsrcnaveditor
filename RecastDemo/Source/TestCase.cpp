@@ -159,7 +159,7 @@ bool TestCase::load(const std::string& filePath)
 			test->expand = false;
 			test->next = m_tests;
 			m_tests = test;
-			sscanf(row+2, "%f %f %f %f %f %f %hx %hx",
+			sscanf(row+2, "%f %f %f %f %f %f %d %d",
 				   &test->spos[0], &test->spos[1], &test->spos[2],
 				   &test->epos[0], &test->epos[1], &test->epos[2],
 				   &test->includeFlags, &test->excludeFlags);
@@ -172,7 +172,7 @@ bool TestCase::load(const std::string& filePath)
 			test->expand = false;
 			test->next = m_tests;
 			m_tests = test;
-			sscanf(row+2, "%f %f %f %f %f %f %hx %hx",
+			sscanf(row+2, "%f %f %f %f %f %f %d %d",
 				   &test->spos[0], &test->spos[1], &test->spos[2],
 				   &test->epos[0], &test->epos[1], &test->epos[2],
 				   &test->includeFlags, &test->excludeFlags);

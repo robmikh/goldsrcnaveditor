@@ -74,6 +74,9 @@ public:
 	virtual bool handleBuild();
 	virtual void handleUpdate(const float dt);
 
+	virtual void addOffMeshConnection(const float* spos, const float* epos, const float rad, const unsigned char area, const unsigned int flags, const bool bBiDirectional);
+	virtual void drawOffMeshConnections(duDebugDraw* dd);
+
 	void getTilePos(const float* pos, int& tx, int& ty);
 	
 	void renderCachedTile(const int tx, const int ty, const int type);
@@ -82,6 +85,8 @@ public:
 	void addTempObstacle(const float* pos);
 	void removeTempObstacle(const float* sp, const float* sq);
 	void clearAllTempObstacles();
+
+	virtual void removeOffMeshConnection(const float* pos);
 
 	void saveAll(const char* path);
 	void loadAll(const char* path);

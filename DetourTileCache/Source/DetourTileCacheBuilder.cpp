@@ -1784,7 +1784,7 @@ dtStatus dtBuildTileCachePolyMesh(dtTileCacheAlloc* alloc,
 	if (!mesh.areas)
 		return DT_FAILURE | DT_OUT_OF_MEMORY;
 
-	mesh.flags = (unsigned short*)alloc->alloc(sizeof(unsigned short)*maxTris);
+	mesh.flags = (unsigned int*)alloc->alloc(sizeof(unsigned int)*maxTris);
 	if (!mesh.flags)
 		return DT_FAILURE | DT_OUT_OF_MEMORY;
 

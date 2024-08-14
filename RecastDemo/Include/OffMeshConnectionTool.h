@@ -29,6 +29,7 @@ class OffMeshConnectionTool : public SampleTool
 	float m_hitPos[3];
 	bool m_hitPosSet;
 	bool m_bidir;
+	int m_connIndex = 0;
 	unsigned char m_oldFlags;
 	
 public:

@@ -431,7 +431,7 @@ void duDebugDrawNavMeshPortals(duDebugDraw* dd, const dtNavMesh& mesh)
 }
 
 void duDebugDrawNavMeshPolysWithFlags(struct duDebugDraw* dd, const dtNavMesh& mesh,
-									  const unsigned short polyFlags, const unsigned int col)
+									  const unsigned int polyFlags, const unsigned int col)
 {
 	if (!dd) return;
 	

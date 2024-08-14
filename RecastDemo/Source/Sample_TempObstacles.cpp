@@ -48,6 +48,9 @@
 #include "RecastAssert.h"
 #include "fastlz.h"
 
+#include "NavProfiles.h"
+#include "MeshEditorTool.h"
+
 #ifdef WIN32
 #	define snprintf _snprintf
 #endif
@@ -201,27 +204,27 @@ struct MeshProcess : public dtTileCacheMeshProcess
 	}
 	
 	virtual void process(struct dtNavMeshCreateParams* params,
-						 unsigned char* polyAreas, unsigned short* polyFlags)
+						 unsigned char* polyAreas, unsigned int* polyFlags)
 	{
 		// Update poly flags from areas.
 		for (int i = 0; i < params->polyCount; ++i)
 		{
-			if (polyAreas[i] == DT_TILECACHE_WALKABLE_AREA)
-				polyAreas[i] = SAMPLE_POLYAREA_GROUND;
+			NavAreaDefinition* Area = GetAreaAtIndex(polyAreas[i]);
 
-			if (polyAreas[i] == SAMPLE_POLYAREA_GROUND ||
-				polyAreas[i] == SAMPLE_POLYAREA_GRASS ||
-				polyAreas[i] == SAMPLE_POLYAREA_ROAD)
+			if (Area)
 			{
-				polyFlags[i] = SAMPLE_POLYFLAGS_WALK;
-			}
-			else if (polyAreas[i] == SAMPLE_POLYAREA_WATER)
-			{
-				polyFlags[i] = SAMPLE_POLYFLAGS_SWIM;
-			}
-			else if (polyAreas[i] == SAMPLE_POLYAREA_DOOR)
-			{
-				polyFlags[i] = SAMPLE_POLYFLAGS_WALK | SAMPLE_POLYFLAGS_DOOR;
+				polyAreas[i] = Area->AreaId;
+
+				NavFlagDefinition* Flag = GetFlagAtIndex(Area->FlagIndex);
+
+				if (Flag)
+				{
+					if (Flag->NavFlagIndex == 0)
+					{
+						bool bBoop = true;
+					}
+					polyFlags[i] = Flag->FlagId;
+				}
 			}
 		}
 
@@ -360,12 +363,12 @@ int Sample_TempObstacles::rasterizeTileLayers(
 	{
 		const rcChunkyTriMeshNode& node = chunkyMesh->nodes[cid[i]];
 		const int* tris = &chunkyMesh->tris[node.i*3];
-		const int* surfTypes = &chunkyMesh->surfTypes[node.i * 3];
+		const int* surfTypes = &chunkyMesh->surfTypes[node.i];
 		const int ntris = node.n;
 		
 		memset(rc.triareas, 0, ntris*sizeof(unsigned char));
-		rcMarkWalkableTriangles(m_ctx, tcfg.walkableSlopeAngle,
-								verts, nverts, tris, ntris, rc.triareas, surfTypes);
+
+		rcMarkWalkableTriangles(m_ctx, tcfg.walkableSlopeAngle,	verts, nverts, tris, ntris, rc.triareas, surfTypes);
 		
 		if (!rcRasterizeTriangles(m_ctx, verts, nverts, tris, rc.triareas, ntris, *rc.solid, tcfg.walkableClimb))
 			return 0;
@@ -388,18 +391,18 @@ int Sample_TempObstacles::rasterizeTileLayers(
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Out of memory 'chf'.");
 		return 0;
 	}
-	if (!rcBuildCompactHeightfield(m_ctx, tcfg.walkableHeight, tcfg.walkableClimb, *rc.solid, *rc.chf))
+	if (!rcBuildCompactHeightfield(m_ctx, 13, tcfg.walkableClimb, *rc.solid, *rc.chf))
 	{
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not build compact data.");
 		return 0;
 	}
 	
 	// Erode the walkable area by agent radius.
-	//if (!rcErodeWalkableArea(m_ctx, tcfg.walkableRadius, *rc.chf))
-	//{
-	//	m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not erode.");
-	//	return 0;
-	//}
+	if (!rcErodeWalkableArea(m_ctx, tcfg.walkableRadius, *rc.chf))
+	{
+		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not erode.");
+		return 0;
+	}
 	
 	// (Optional) Mark areas.
 	const ConvexVolume* vols = m_geom->getConvexVolumes();
@@ -416,7 +419,7 @@ int Sample_TempObstacles::rasterizeTileLayers(
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Out of memory 'lset'.");
 		return 0;
 	}
-	if (!rcBuildHeightfieldLayers(m_ctx, *rc.chf, tcfg.borderSize, tcfg.walkableHeight, *rc.lset))
+	if (!rcBuildHeightfieldLayers(m_ctx, *rc.chf, tcfg.borderSize, 13, *rc.lset))
 	{
 		m_ctx->log(RC_LOG_ERROR, "buildNavigation: Could not build heighfield layers.");
 		return 0;
@@ -954,6 +957,10 @@ void Sample_TempObstacles::handleTools()
 {
 	int type = !m_tool ? TOOL_NONE : m_tool->type();
 
+	if (imguiCheck("Edit Map", type == TOOL_MESH_EDITOR))
+	{
+		setTool(new MeshEditorTool);
+	}
 	if (imguiCheck("Test Navmesh", type == TOOL_NAVMESH_TESTER))
 	{
 		setTool(new NavMeshTesterTool);
@@ -1062,7 +1069,9 @@ void Sample_TempObstacles::handleRender()
 		drawTiles(&m_dd, m_tileCache);
 	
 	if (m_tileCache)
+	{
 		drawObstacles(&m_dd, m_tileCache);
+	}
 	
 	
 	glDepthMask(GL_FALSE);
@@ -1261,6 +1270,7 @@ bool Sample_TempObstacles::handleBuild()
 	tcparams.maxSimplificationError = m_edgeMaxError;
 	tcparams.maxTiles = tw*th*EXPECTED_LAYERS_PER_TILE;
 	tcparams.maxObstacles = 128;
+	tcparams.maxOffMeshConnections = 512;
 
 	dtFreeTileCache(m_tileCache);
 	
@@ -1542,4 +1552,78 @@ void Sample_TempObstacles::loadAll(const char* path)
 	}
 	
 	fclose(fp);
+}
+
+void Sample_TempObstacles::addOffMeshConnection(const float* spos, const float* epos, const float rad, const unsigned char area, const unsigned int flags, const bool bBiDirectional)
+{
+	if (m_tileCache)
+		m_tileCache->addOffMeshConnection(spos, epos, rad, area, flags, bBiDirectional, 0);
+}
+
+void Sample_TempObstacles::drawOffMeshConnections(duDebugDraw* dd)
+{
+	unsigned int conColor = duRGBA(192, 0, 128, 192);
+	unsigned int baseColor = duRGBA(0, 0, 0, 64);
+
+	dd->depthMask(false);
+
+	dd->begin(DU_DRAW_LINES, 2.0f);
+
+	// Draw obstacles
+	for (int i = 0; i < m_tileCache->getOffMeshCount(); ++i)
+	{
+		const dtOffMeshConnection* con = m_tileCache->getOffMeshConnection(i);
+		if (con->state == DT_OFFMESH_EMPTY || con->state == DT_OFFMESH_REMOVING) continue;
+		
+		dd->vertex(con->pos[0], con->pos[1], con->pos[2], baseColor);
+		dd->vertex(con->pos[0], con->pos[1] + 0.2f, con->pos[2], baseColor);
+
+		dd->vertex(con->pos[3], con->pos[4], con->pos[5], baseColor);
+		dd->vertex(con->pos[3], con->pos[4] + 0.2f, con->pos[5], baseColor);
+
+		duAppendCircle(dd, con->pos[0], con->pos[1] + 0.1f, con->pos[2], con->rad, baseColor);
+		duAppendCircle(dd, con->pos[3], con->pos[4] + 0.1f, con->pos[5], con->rad, baseColor);
+
+		duAppendArc(dd, con->pos[0], con->pos[1], con->pos[2], con->pos[3], con->pos[4], con->pos[5], 0.25f,
+			(con->bBiDir) ? 0.6f : 0.0f, 0.6f, conColor);
+	}
+
+	dd->end();
+
+	dd->depthMask(true);
+}
+
+dtOffMeshConnectionRef hitTestOffMeshConnection(const dtTileCache* tc, const float* pos)
+{
+	float tmin = FLT_MAX;
+	const dtOffMeshConnection* conmin = 0;
+	for (int i = 0; i < tc->getOffMeshCount(); ++i)
+	{
+		const dtOffMeshConnection* con = tc->getOffMeshConnection(i);
+		if (con->state == DT_OFFMESH_EMPTY)
+			continue;
+
+		float distSpos = dtVdistSqr(pos, &con->pos[0]);
+		float distEpos = dtVdistSqr(pos, &con->pos[3]);
+
+		float thisDist = dtMin(distSpos, distEpos);
+
+		if (thisDist > dtSqr(con->rad)) { continue; }
+
+		if (thisDist < tmin)
+		{
+			conmin = con;
+			tmin = thisDist;
+		}
+	}
+	return tc->getOffMeshRef(conmin);
+}
+
+void Sample_TempObstacles::removeOffMeshConnection(const float* pos)
+{
+	if (m_tileCache)
+	{
+		dtOffMeshConnectionRef ref = hitTestOffMeshConnection(m_tileCache, pos);
+		m_tileCache->removeOffMeshConnection(ref);
+	}
 }

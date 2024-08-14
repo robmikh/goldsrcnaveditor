@@ -1285,7 +1285,7 @@ bool rcBuildPolyMesh(rcContext* ctx, const rcContourSet& cset, const int nvp, rc
 	}
 
 	// Just allocate the mesh flags array. The user is resposible to fill it.
-	mesh.flags = (unsigned short*)rcAlloc(sizeof(unsigned short)*mesh.npolys, RC_ALLOC_PERM);
+	mesh.flags = (unsigned int*)rcAlloc(sizeof(unsigned int)*mesh.npolys, RC_ALLOC_PERM);
 	if (!mesh.flags)
 	{
 		ctx->log(RC_LOG_ERROR, "rcBuildPolyMesh: Out of memory 'mesh.flags' (%d).", mesh.npolys);
@@ -1366,7 +1366,7 @@ bool rcMergePolyMeshes(rcContext* ctx, rcPolyMesh** meshes, const int nmeshes, r
 	}
 	memset(mesh.areas, 0, sizeof(unsigned char)*maxPolys);
 
-	mesh.flags = (unsigned short*)rcAlloc(sizeof(unsigned short)*maxPolys, RC_ALLOC_PERM);
+	mesh.flags = (unsigned int*)rcAlloc(sizeof(unsigned int)*maxPolys, RC_ALLOC_PERM);
 	if (!mesh.flags)
 	{
 		ctx->log(RC_LOG_ERROR, "rcMergePolyMeshes: Out of memory 'mesh.flags' (%d).", maxPolys);
@@ -1538,7 +1538,7 @@ bool rcCopyPolyMesh(rcContext* ctx, const rcPolyMesh& src, rcPolyMesh& dst)
 	}
 	memcpy(dst.areas, src.areas, sizeof(unsigned char)*src.npolys);
 	
-	dst.flags = (unsigned short*)rcAlloc(sizeof(unsigned short)*src.npolys, RC_ALLOC_PERM);
+	dst.flags = (unsigned int*)rcAlloc(sizeof(unsigned int)*src.npolys, RC_ALLOC_PERM);
 	if (!dst.flags)
 	{
 		ctx->log(RC_LOG_ERROR, "rcCopyPolyMesh: Out of memory 'dst.flags' (%d).", src.npolys);

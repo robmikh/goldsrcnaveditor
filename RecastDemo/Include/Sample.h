@@ -184,6 +184,11 @@ public:
 	void SetTriangleSurfaceType(const int TriNum, const int NewAreaType);
 	void SetModelSurfaceType(const int ModelNum, const int NewAreaType);
 
+	virtual void addOffMeshConnection(const float* spos, const float* epos, const float rad, const unsigned char area, const unsigned int flags, const bool bBiDirectional);
+	virtual void removeOffMeshConnection(const float* pos);
+
+	virtual void drawOffMeshConnections(duDebugDraw* dd);
+
 private:
 	// Explicitly disabled copy constructor and copy assignment operator.
 	Sample(const Sample&);

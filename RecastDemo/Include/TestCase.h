@@ -65,8 +65,8 @@ class TestCase
 		float nspos[3];
 		float nepos[3];
 		float radius;
-		unsigned short includeFlags;
-		unsigned short excludeFlags;
+		unsigned int includeFlags;
+		unsigned int excludeFlags;
 		bool expand;
 		
 		float* straight;

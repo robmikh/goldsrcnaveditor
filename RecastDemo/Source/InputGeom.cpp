@@ -284,7 +284,7 @@ bool InputGeom::loadGeomSet(rcContext* ctx, const std::string& filepath)
 				m_offMeshConRads[m_offMeshConCount] = rad;
 				m_offMeshConDirs[m_offMeshConCount] = (unsigned char)bidir;
 				m_offMeshConAreas[m_offMeshConCount] = (unsigned char)area;
-				m_offMeshConFlags[m_offMeshConCount] = (unsigned short)flags;
+				m_offMeshConFlags[m_offMeshConCount] = (unsigned int)flags;
 				m_offMeshConCount++;
 			}
 		}
@@ -510,7 +510,7 @@ bool InputGeom::raycastMesh(float* src, float* dst, float& tmin)
 }
 
 void InputGeom::addOffMeshConnection(const float* spos, const float* epos, const float rad,
-									 unsigned char bidir, unsigned char area, unsigned short flags)
+									 unsigned char bidir, unsigned char area, unsigned int flags)
 {
 	if (m_offMeshConCount >= MAX_OFFMESH_CONNECTIONS) return;
 	float* v = &m_offMeshConVerts[m_offMeshConCount*3*2];

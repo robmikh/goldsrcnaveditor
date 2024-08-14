@@ -472,3 +472,45 @@ void Sample::SetModelSurfaceType(const int ModelNum, const int NewAreaType)
 		m_geom->SetModelArea(ModelNum, NewAreaType);
 	}
 }
+
+void Sample::addOffMeshConnection(const float* spos, const float* epos, const float rad, const unsigned char area, const unsigned int flags, const bool bBiDirectional)
+{
+	if (m_geom)
+	{
+		m_geom->addOffMeshConnection(spos, epos, rad, bBiDirectional, area, flags);
+	}
+}
+
+void Sample::removeOffMeshConnection(const float* pos)
+{
+	// Delete
+// Find nearest link end-point
+	float nearestDist = FLT_MAX;
+	int nearestIndex = -1;
+	const float* verts = m_geom->getOffMeshConnectionVerts();
+	float maxDist = rcSqr(this->getAgentRadius());
+	for (int i = 0; i < m_geom->getOffMeshConnectionCount() * 2; ++i)
+	{
+		const float* v = &verts[i * 3];
+		float d = rcVdistSqr(pos, v);
+		if (d < maxDist && d < nearestDist)
+		{
+			nearestDist = d;
+			nearestIndex = i / 2; // Each link has two vertices.
+		}
+	}
+	// If end point close enough, delete it.
+	if (nearestIndex != -1 &&
+		sqrtf(nearestDist) < this->getAgentRadius())
+	{
+		m_geom->deleteOffMeshConnection(nearestIndex);
+	}
+}
+
+void Sample::drawOffMeshConnections(duDebugDraw* dd)
+{
+	if (m_geom)
+	{
+		m_geom->drawOffMeshConnections(dd);
+	}
+}
