@@ -74,6 +74,7 @@ dtTileCache::dtTileCache() :
 	m_obstacles(0),
 	m_nextFreeObstacle(0),
 	m_nreqs(0),
+	m_nOffMeshReqs(0),
 	m_nupdate(0)
 {
 	memset(&m_params, 0, sizeof(m_params));
@@ -97,6 +98,7 @@ dtTileCache::~dtTileCache()
 	dtFree(m_tiles);
 	m_tiles = 0;
 	m_nreqs = 0;
+	m_nOffMeshReqs = 0;
 	m_nupdate = 0;
 }
 

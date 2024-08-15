@@ -128,7 +128,7 @@ void OffMeshConnectionTool::handleClick(const float* /*s*/, const float* p, bool
 
 			if (!ConnArea || !ConnFlag) { return; }
 
-			m_sample->addOffMeshConnection(m_hitPos, p, m_sample->getAgentRadius(), m_bidir ? 1 : 0, ConnArea->AreaId, ConnFlag->FlagId);
+			m_sample->addOffMeshConnection(m_hitPos, p, m_sample->getAgentRadius(), ConnArea->AreaId, ConnFlag->FlagId, m_bidir ? 1 : 0);
 			m_hitPosSet = false;
 		}
 	}

@@ -91,6 +91,7 @@ NavGameProfile* CreateNewGameProfile()
 	DisabledFlagDef.TechnicalName = "NAV_FLAG_DISABLED";
 	DisabledFlagDef.FlagId = 1 << 15;
 	DisabledFlagDef.bCustom = false;
+	DisabledFlagDef.DebugColor = duRGBA2(8, 8, 8, 255);
 
 	NavFlagDefinition WalkFlagDef;
 	WalkFlagDef.NavFlagIndex = 1;
@@ -98,6 +99,7 @@ NavGameProfile* CreateNewGameProfile()
 	WalkFlagDef.TechnicalName = "NAV_FLAG_WALK";
 	WalkFlagDef.FlagId = 1 << 0;
 	WalkFlagDef.bCustom = false;
+	WalkFlagDef.DebugColor = duRGBA2(0, 192, 255, 255);
 
 	NavFlagDefinition CrouchFlagDef;
 	CrouchFlagDef.NavFlagIndex = 2;
@@ -105,6 +107,7 @@ NavGameProfile* CreateNewGameProfile()
 	CrouchFlagDef.TechnicalName = "NAV_FLAG_CROUCH";
 	CrouchFlagDef.FlagId = 1 << 1;
 	CrouchFlagDef.bCustom = false;
+	CrouchFlagDef.DebugColor = duRGBA2(9, 130, 150, 255);
 
 	NavFlagDefinition JumpFlagDef;
 	JumpFlagDef.NavFlagIndex = 3;
@@ -112,6 +115,7 @@ NavGameProfile* CreateNewGameProfile()
 	JumpFlagDef.TechnicalName = "NAV_FLAG_JUMP";
 	JumpFlagDef.FlagId = 1 << 2;
 	JumpFlagDef.bCustom = false;
+	JumpFlagDef.DebugColor = duRGBA2(200, 200, 0, 255);
 
 	NavFlagDefinition LadderFlagDef;
 	LadderFlagDef.NavFlagIndex = 4;
@@ -119,6 +123,7 @@ NavGameProfile* CreateNewGameProfile()
 	LadderFlagDef.TechnicalName = "NAV_FLAG_LADDER";
 	LadderFlagDef.FlagId = 1 << 3;
 	LadderFlagDef.bCustom = false;
+	LadderFlagDef.DebugColor = duRGBA2(64, 64, 255, 255);
 
 	NavFlagDefinition FallFlagDef;
 	FallFlagDef.NavFlagIndex = 5;
@@ -126,6 +131,7 @@ NavGameProfile* CreateNewGameProfile()
 	FallFlagDef.TechnicalName = "NAV_FLAG_FALL";
 	FallFlagDef.FlagId = 1 << 4;
 	FallFlagDef.bCustom = false;
+	FallFlagDef.DebugColor = duRGBA2(255, 64, 64, 255);
 
 	NewProfile.FlagDefinitions.push_back(DisabledFlagDef);
 	NewProfile.FlagDefinitions.push_back(WalkFlagDef);
@@ -707,6 +713,23 @@ NavAreaDefinition* GetNavAreaById(unsigned short Id)
 	for (auto it = CurrentProfile->AreaDefinitions.begin(); it != CurrentProfile->AreaDefinitions.end(); it++)
 	{
 		if (it->AreaId == Id)
+		{
+			return &(*it);
+		}
+	}
+
+	return nullptr;
+}
+
+NavFlagDefinition* GetFlagByFlagId(unsigned int Id)
+{
+	NavGameProfile* CurrentProfile = GetCurrentGameProfile();
+
+	if (!CurrentProfile) { return nullptr; }
+
+	for (auto it = CurrentProfile->FlagDefinitions.begin(); it != CurrentProfile->FlagDefinitions.end(); it++)
+	{
+		if (it->FlagId == Id)
 		{
 			return &(*it);
 		}

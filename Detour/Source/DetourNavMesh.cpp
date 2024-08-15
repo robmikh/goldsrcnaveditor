@@ -461,7 +461,7 @@ void dtNavMesh::connectExtOffMeshLinks(dtMeshTile* tile, dtMeshTile* target, int
 	
 	for (int i = 0; i < target->header->offMeshConCount; ++i)
 	{
-		dtOffMeshConnection* targetCon = &target->offMeshCons[i];
+		dtOffMeshConnection* targetCon = target->offMeshCons[i];
 		if (targetCon->side != oppositeSide)
 			continue;
 
@@ -628,7 +628,7 @@ void dtNavMesh::baseOffMeshLinks(dtMeshTile* tile)
 	// Base off-mesh connection start points.
 	for (int i = 0; i < tile->header->offMeshConCount; ++i)
 	{
-		dtOffMeshConnection* con = &tile->offMeshCons[i];
+		dtOffMeshConnection* con = tile->offMeshCons[i];
 		dtPoly* poly = &tile->polys[con->poly];
 	
 		const float halfExtents[3] = { con->rad, tile->header->walkableClimb, con->rad };
@@ -1054,7 +1054,7 @@ dtStatus dtNavMesh::addTile(unsigned char* data, int dataSize, int flags,
 	tile->detailVerts = dtGetThenAdvanceBufferPointer<float>(d, detailVertsSize);
 	tile->detailTris = dtGetThenAdvanceBufferPointer<unsigned char>(d, detailTrisSize);
 	tile->bvTree = dtGetThenAdvanceBufferPointer<dtBVNode>(d, bvtreeSize);
-	tile->offMeshCons = dtGetThenAdvanceBufferPointer<dtOffMeshConnection>(d, offMeshLinksSize);
+	tile->offMeshCons = dtGetThenAdvanceBufferPointer<dtOffMeshConnection*>(d, offMeshLinksSize);
 
 	// If there are no items in the bvtree, reset the tree pointer.
 	if (!bvtreeSize)
@@ -1075,8 +1075,8 @@ dtStatus dtNavMesh::addTile(unsigned char* data, int dataSize, int flags,
 	connectIntLinks(tile);
 
 	// Base off-mesh connections to their starting polygons and connect connections inside the tile.
-	baseOffMeshLinks(tile);
-	connectExtOffMeshLinks(tile, tile, -1);
+	//baseOffMeshLinks(tile);
+	//connectExtOffMeshLinks(tile, tile, -1);
 
 	// Create connections with neighbour tiles.
 	static const int MAX_NEIS = 32;
@@ -1092,8 +1092,8 @@ dtStatus dtNavMesh::addTile(unsigned char* data, int dataSize, int flags,
 	
 		connectExtLinks(tile, neis[j], -1);
 		connectExtLinks(neis[j], tile, -1);
-		connectExtOffMeshLinks(tile, neis[j], -1);
-		connectExtOffMeshLinks(neis[j], tile, -1);
+		//connectExtOffMeshLinks(tile, neis[j], -1);
+		//connectExtOffMeshLinks(neis[j], tile, -1);
 	}
 	
 	// Connect with neighbour tiles.
@@ -1104,8 +1104,8 @@ dtStatus dtNavMesh::addTile(unsigned char* data, int dataSize, int flags,
 		{
 			connectExtLinks(tile, neis[j], i);
 			connectExtLinks(neis[j], tile, dtOppositeTile(i));
-			connectExtOffMeshLinks(tile, neis[j], i);
-			connectExtOffMeshLinks(neis[j], tile, dtOppositeTile(i));
+			//connectExtOffMeshLinks(tile, neis[j], i);
+			//connectExtOffMeshLinks(neis[j], tile, dtOppositeTile(i));
 		}
 	}
 	
@@ -1581,7 +1581,7 @@ const dtOffMeshConnection* dtNavMesh::getOffMeshConnectionByRef(dtPolyRef ref) c
 
 	const unsigned int idx =  ip - tile->header->offMeshBase;
 	dtAssert(idx < (unsigned int)tile->header->offMeshConCount);
-	return &tile->offMeshCons[idx];
+	return tile->offMeshCons[idx];
 }
 
 

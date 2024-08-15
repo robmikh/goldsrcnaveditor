@@ -1222,6 +1222,20 @@ bool Sample_TempObstacles::handleBuild()
 		return false;
 	}
 
+	std::vector <dtOffMeshConnection> ConnectionsToReadd;
+
+	if (m_tileCache)
+	{
+		for (int i = 0; i < m_tileCache->getOffMeshCount(); i++)
+		{
+			const dtOffMeshConnection* con = m_tileCache->getOffMeshConnection(i);
+
+			if (con->state == DT_OFFMESH_EMPTY || con->state == DT_OFFMESH_REMOVING) { continue; }
+
+			ConnectionsToReadd.push_back(*con);
+		}
+	}
+
 	m_tmproc->init(m_geom);
 	
 	// Init cache
@@ -1378,6 +1392,14 @@ bool Sample_TempObstacles::handleBuild()
 	if (m_tool)
 		m_tool->init(this);
 	initToolStates(this);
+
+	if (m_tileCache)
+	{
+		for (auto it = ConnectionsToReadd.begin(); it != ConnectionsToReadd.end(); it++)
+		{
+			m_tileCache->addOffMeshConnection(&it->pos[0], &it->pos[3], it->rad, it->area, it->flags, it->bBiDir, 0);
+		}
+	}
 
 	return true;
 }
@@ -1574,6 +1596,15 @@ void Sample_TempObstacles::drawOffMeshConnections(duDebugDraw* dd)
 	{
 		const dtOffMeshConnection* con = m_tileCache->getOffMeshConnection(i);
 		if (con->state == DT_OFFMESH_EMPTY || con->state == DT_OFFMESH_REMOVING) continue;
+
+		unsigned int thisConColor = conColor;
+
+		NavFlagDefinition* FlagDef = GetFlagByFlagId(con->flags);
+
+		if (FlagDef)
+		{
+			thisConColor = FlagDef->DebugColor;
+		}
 		
 		dd->vertex(con->pos[0], con->pos[1], con->pos[2], baseColor);
 		dd->vertex(con->pos[0], con->pos[1] + 0.2f, con->pos[2], baseColor);
@@ -1585,7 +1616,7 @@ void Sample_TempObstacles::drawOffMeshConnections(duDebugDraw* dd)
 		duAppendCircle(dd, con->pos[3], con->pos[4] + 0.1f, con->pos[5], con->rad, baseColor);
 
 		duAppendArc(dd, con->pos[0], con->pos[1], con->pos[2], con->pos[3], con->pos[4], con->pos[5], 0.25f,
-			(con->bBiDir) ? 0.6f : 0.0f, 0.6f, conColor);
+			(con->bBiDir) ? 0.6f : 0.0f, 0.6f, thisConColor);
 	}
 
 	dd->end();

@@ -98,6 +98,7 @@ NavAgentProfile* CreateNewAgentProfile();
 NavAreaDefinition* GetAreaAtIndex(unsigned int Index);
 NavAreaDefinition* GetNavAreaById(unsigned short Id);
 NavFlagDefinition* GetFlagAtIndex(unsigned int Index);
+NavFlagDefinition* GetFlagByFlagId(unsigned int Id);
 NavOffMeshConnectionDefinition* GetConnectionAtIndex(unsigned int Index);
 NavMeshDefinition* GetMeshAtIndex(unsigned int Index);
 NavAgentProfile* GetAgentProfileAtIndex(unsigned int Index);

@@ -306,7 +306,7 @@ bool dtCreateNavMeshData(dtNavMeshCreateParams* params, unsigned char** outData,
 		{
 			dtOffMeshConnection* con = &params->GlobalOffMeshConnections[i];
 
-			if (con->state == DT_OFFMESH_EMPTY || con->state == DT_OFFMESH_REMOVING) { continue; }
+			if (!con || con->state == DT_OFFMESH_EMPTY || con->state == DT_OFFMESH_REMOVING) { continue; }
 
 			bool bOriginates = (con->FromTileX == params->tileX && con->FromTileY == params->tileY && con->FromTileLayer == params->tileLayer);
 			bool bTargets = (con->ToTileX == params->tileX && con->ToTileY == params->tileY && con->ToTileLayer == params->tileLayer);

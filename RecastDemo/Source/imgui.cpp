@@ -1329,7 +1329,7 @@ bool addFlagRow(const int FlagIndex)
 		addGfxCmdText(TechNameStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
 	}
 
-	imguiDrawRect((float)ColourStartX, (float)RowStartY - 10, (float)25, (float)25, duIntToCol2(FlagDef->NavFlagIndex, 255));
+	imguiDrawRect((float)ColourStartX, (float)RowStartY - 10, (float)25, (float)25, FlagDef->DebugColor);
 
 	int endWidgetX = g_state.widgetX;
 	int endWidgetY = g_state.widgetY;

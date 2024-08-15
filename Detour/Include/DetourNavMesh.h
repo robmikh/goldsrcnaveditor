@@ -331,7 +331,7 @@ struct dtMeshTile
 	/// (Will be null if bounding volumes are disabled.)
 	dtBVNode* bvTree;
 
-	dtOffMeshConnection* offMeshCons;		///< The tile off-mesh connections. [Size: dtMeshHeader::offMeshConCount]
+	dtOffMeshConnection** offMeshCons;		///< The tile off-mesh connections. [Size: dtMeshHeader::offMeshConCount]
 		
 	unsigned char* data;					///< The tile data. (Not directly accessed under normal situations.)
 	int dataSize;							///< Size of the tile data.
