@@ -48,7 +48,7 @@ void imguiUnindent();
 void imguiSeparator();
 void imguiSeparatorLine();
 
-bool imguiButton(const char* text, bool enabled = true);
+bool imguiButton(const char* text, bool enabled = true, bool invisible = false);
 bool imguiItem(const char* text, bool enabled = true);
 bool imguiCheck(const char* text, bool checked, bool enabled = true);
 bool imguiCollapse(const char* text, const char* subtext, bool checked, bool enabled = true);

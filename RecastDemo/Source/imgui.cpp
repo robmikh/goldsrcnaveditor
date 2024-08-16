@@ -432,7 +432,7 @@ void imguiEndScrollArea()
 	g_state.insideCurrentScroll = false;
 }
 
-bool imguiButton(const char* text, bool enabled)
+bool imguiButton(const char* text, bool enabled, bool invisible)
 {
 	g_state.widgetId++;
 	unsigned int id = (g_state.areaId<<16) | g_state.widgetId;
@@ -446,11 +446,18 @@ bool imguiButton(const char* text, bool enabled)
 	bool over = enabled && inRect(x, y, w, h);
 	bool res = buttonLogic(id, over);
 
-	addGfxCmdRoundedRect((float)x, (float)y, (float)w, (float)h, (float)BUTTON_HEIGHT/2-1, imguiRGBA(128,128,128, isActive(id)?196:96));
-	if (enabled)
-		addGfxCmdText(x+BUTTON_HEIGHT/2, y+BUTTON_HEIGHT/2-TEXT_HEIGHT/2, IMGUI_ALIGN_LEFT, text, isHot(id) ? imguiRGBA(255,196,0,255) : imguiRGBA(255,255,255,200));
+	if (!invisible)
+	{
+		addGfxCmdRoundedRect((float)x, (float)y, (float)w, (float)h, (float)BUTTON_HEIGHT / 2 - 1, imguiRGBA(128, 128, 128, isActive(id) ? 196 : 96));
+		if (enabled)
+			addGfxCmdText(x + BUTTON_HEIGHT / 2, y + BUTTON_HEIGHT / 2 - TEXT_HEIGHT / 2, IMGUI_ALIGN_LEFT, text, isHot(id) ? imguiRGBA(255, 196, 0, 255) : imguiRGBA(255, 255, 255, 200));
+		else
+			addGfxCmdText(x + BUTTON_HEIGHT / 2, y + BUTTON_HEIGHT / 2 - TEXT_HEIGHT / 2, IMGUI_ALIGN_LEFT, text, imguiRGBA(128, 128, 128, 200));
+	}
 	else
-		addGfxCmdText(x+BUTTON_HEIGHT/2, y+BUTTON_HEIGHT/2-TEXT_HEIGHT/2, IMGUI_ALIGN_LEFT, text, imguiRGBA(128,128,128,200));
+	{
+		addGfxCmdRoundedRect((float)x, (float)y, (float)w, (float)h, (float)BUTTON_HEIGHT / 2 - 1, imguiRGBA(0,0,0,0));
+	}
 
 	return res;
 }
@@ -1198,7 +1205,7 @@ bool addConnectionRow(const int ConnectionIndex)
 		addGfxCmdText(FlagStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
 	}
 
-	imguiDrawRect((float)ColourStartX, (float)RowStartY - 10, (float)25, (float)25, duIntToCol2(ConnDef->ConnIndex, 255));
+	imguiDrawRect((float)ColourStartX, (float)RowStartY - 10, (float)25, (float)25, (FlagRef) ? FlagRef->DebugColor : duRGBA2(8, 8, 8, 255));
 
 	int endWidgetX = g_state.widgetX;
 	int endWidgetY = g_state.widgetY;
@@ -1329,7 +1336,71 @@ bool addFlagRow(const int FlagIndex)
 		addGfxCmdText(TechNameStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
 	}
 
+	int beforeColourX = g_state.widgetX;
+	int beforeColourY = g_state.widgetY;
+	int beforeColourW = g_state.widgetW;
+
 	imguiDrawRect((float)ColourStartX, (float)RowStartY - 10, (float)25, (float)25, FlagDef->DebugColor);
+
+	int afterColourX = g_state.widgetX;
+	int afterColourY = g_state.widgetY;
+	int afterColourW = g_state.widgetW;
+
+	g_state.widgetX = ColourStartX;
+	g_state.widgetY = RowStartY + 10;
+	g_state.widgetW = DeleteStartX - ColourStartX - 10;
+
+	if (imguiButton("", true, true))
+	{
+		unsigned int* CurrentFlagColorModifier = GetFlagColorModifier();
+
+		ResetProfileMenus();
+
+		if (CurrentFlagColorModifier != &FlagDef->DebugColor)
+		{
+			SetFlagColorModifier(&FlagDef->DebugColor);
+		}
+	}
+
+	g_state.widgetX = afterColourX;
+	g_state.widgetY = afterColourY;
+	g_state.widgetW = afterColourW;
+
+	if (GetFlagColorModifier() == &FlagDef->DebugColor)
+	{
+		g_state.widgetY += 20;
+
+		static int areaScroll = 0;
+
+		imguiBeginScrollArea("Choose Color", ColourStartX, RowStartY + 20, DeleteStartX - ColourStartX - 20, 150, &areaScroll);
+
+		if (imguiSlider("R", &FlagDef->R, 0, 255, 1, true))
+		{
+			FlagDef->DebugColor = duRGBA2((int)FlagDef->R, (int)FlagDef->G, (int)FlagDef->B, 255);
+		}
+
+		if (imguiSlider("G", &FlagDef->G, 0, 255, 1, true))
+		{
+			FlagDef->DebugColor = duRGBA2((int)FlagDef->R, (int)FlagDef->G, (int)FlagDef->B, 255);
+		}
+
+		if (imguiSlider("B", &FlagDef->B, 0, 255, 1, true))
+		{
+			FlagDef->DebugColor = duRGBA2((int)FlagDef->R, (int)FlagDef->G, (int)FlagDef->B, 255);
+		}
+
+		if (imguiButton("Save"))
+		{
+			ResetProfileMenus();
+		}
+
+		imguiEndScrollArea();
+
+		g_state.widgetX = afterColourX;
+		g_state.widgetY = afterColourY;
+		g_state.widgetW = afterColourW;
+	}
+
 
 	int endWidgetX = g_state.widgetX;
 	int endWidgetY = g_state.widgetY;
@@ -1532,7 +1603,70 @@ bool addAreaRow(const int AreaIndex)
 		addGfxCmdText(FlagStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
 	}
 
+	int beforeColourX = g_state.widgetX;
+	int beforeColourY = g_state.widgetY;
+	int beforeColourW = g_state.widgetW;
+
 	imguiDrawRect((float)ColourStartX, (float)RowStartY - 10, (float)25, (float)25, AreaDef->DebugColor);
+
+	int afterColourX = g_state.widgetX;
+	int afterColourY = g_state.widgetY;
+	int afterColourW = g_state.widgetW;
+
+	g_state.widgetX = ColourStartX;
+	g_state.widgetY = RowStartY + 10;
+	g_state.widgetW = DeleteStartX - ColourStartX - 10;
+
+	if (imguiButton("", true, true))
+	{
+		unsigned int* CurrentFlagColorModifier = GetFlagColorModifier();
+
+		ResetProfileMenus();
+
+		if (CurrentFlagColorModifier != &AreaDef->DebugColor)
+		{
+			SetFlagColorModifier(&AreaDef->DebugColor);
+		}
+	}
+
+	g_state.widgetX = afterColourX;
+	g_state.widgetY = afterColourY;
+	g_state.widgetW = afterColourW;
+
+	if (GetFlagColorModifier() == &AreaDef->DebugColor)
+	{
+		g_state.widgetY += 20;
+
+		static int areaScroll = 0;
+
+		imguiBeginScrollArea("Choose Color", ColourStartX, RowStartY + 20, DeleteStartX - ColourStartX - 20, 150, &areaScroll);
+
+		if (imguiSlider("R", &AreaDef->R, 0, 255, 1, true))
+		{
+			AreaDef->DebugColor = duRGBA2((int)AreaDef->R, (int)AreaDef->G, (int)AreaDef->B, 255);
+		}
+
+		if (imguiSlider("G", &AreaDef->G, 0, 255, 1, true))
+		{
+			AreaDef->DebugColor = duRGBA2((int)AreaDef->R, (int)AreaDef->G, (int)AreaDef->B, 255);
+		}
+
+		if (imguiSlider("B", &AreaDef->B, 0, 255, 1, true))
+		{
+			AreaDef->DebugColor = duRGBA2((int)AreaDef->R, (int)AreaDef->G, (int)AreaDef->B, 255);
+		}
+
+		if (imguiButton("Save"))
+		{
+			ResetProfileMenus();
+		}
+
+		imguiEndScrollArea();
+
+		g_state.widgetX = afterColourX;
+		g_state.widgetY = afterColourY;
+		g_state.widgetW = afterColourW;
+	}
 
 	int endWidgetX = g_state.widgetX;
 	int endWidgetY = g_state.widgetY;

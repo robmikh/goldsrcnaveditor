@@ -668,6 +668,16 @@ int main(int /*argc*/, char** /*argv*/)
 					bShowNavMeshProfiles = false;
 				}
 
+				if (imguiButton("Save Changes"))
+				{
+					NavGameProfile* CurrentProfile = GetCurrentGameProfile();
+
+					if (CurrentProfile)
+					{
+						OutputProfileConfig(CurrentProfile);
+					}
+				}
+
 				imguiSeparator();
 
 				imguiEndScrollArea();

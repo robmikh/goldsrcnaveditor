@@ -38,6 +38,9 @@ typedef struct _NAV_AREA_DEF
 	unsigned char AreaId = 0;
 	unsigned int FlagIndex = 0;
 	bool bCustom = false;
+	float R = 0.0f;
+	float G = 0.0f;
+	float B = 0.0f;
 	unsigned int DebugColor = 0;
 } NavAreaDefinition;
 
@@ -48,6 +51,9 @@ typedef struct _NAV_FLAG_DEF
 	unsigned int NavFlagIndex = 0;
 	unsigned int FlagId = 0;
 	bool bCustom = false;
+	float R = 0.0f;
+	float G = 0.0f;
+	float B = 0.0f;
 	unsigned int DebugColor = 0;
 } NavFlagDefinition;
 
@@ -131,6 +137,7 @@ void SetConnAreaModifier(int NewIndex);
 void SetConnFlagModifier(int NewIndex);
 void SetAreaFlagModifier(int NewIndex);
 void SetProfileMeshModifier(int NewIndex);
+void SetFlagColorModifier(unsigned int* NewColorIndex);
 
 int GetProfileModifier();
 void SetProfileModifier(int NewIndex);
@@ -142,6 +149,10 @@ int GetConnAreaModifier();
 int GetConnFlagModifier();
 int GetProfileMeshModifier();
 
+unsigned int* GetFlagColorModifier();
+
 void ResetProfileMenus();
+
+void OutputProfileConfig(NavGameProfile* Profile);
 
 #endif // NAV_PROFILES_H

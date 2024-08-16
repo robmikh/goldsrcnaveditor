@@ -16,6 +16,8 @@ int ConnFlagModifier = -1;
 int ProfileMeshModifier = -1;
 int ProfileModifier = 0;
 
+unsigned int* FlagColorModifier = nullptr;
+
 
 unsigned int GetCurrentGameProfileIndex()
 {
@@ -51,6 +53,9 @@ NavGameProfile* CreateNewGameProfile()
 	DefaultNullArea.AreaId = 60;
 	DefaultNullArea.FlagIndex = 0;
 	DefaultNullArea.bCustom = false;
+	DefaultNullArea.R = 10.0f;
+	DefaultNullArea.G = 10.0f;
+	DefaultNullArea.B = 10.0f;
 	DefaultNullArea.DebugColor = duRGBA2(10, 10, 10, 255);
 
 	NavAreaDefinition DefaultWalkArea;
@@ -60,6 +65,9 @@ NavGameProfile* CreateNewGameProfile()
 	DefaultWalkArea.AreaId = 1;
 	DefaultWalkArea.FlagIndex = 1;
 	DefaultWalkArea.bCustom = false;
+	DefaultWalkArea.R = 0.0f;
+	DefaultWalkArea.G = 192.0f;
+	DefaultWalkArea.B = 255.0f;
 	DefaultWalkArea.DebugColor = duRGBA2(0, 192, 255, 255);
 
 	NavAreaDefinition DefaultCrouchArea;
@@ -69,6 +77,9 @@ NavGameProfile* CreateNewGameProfile()
 	DefaultCrouchArea.AreaId = 2;
 	DefaultCrouchArea.FlagIndex = 2;
 	DefaultCrouchArea.bCustom = false;
+	DefaultCrouchArea.R = 9.0f;
+	DefaultCrouchArea.G = 130.0f;
+	DefaultCrouchArea.B = 150.0f;
 	DefaultCrouchArea.DebugColor = duRGBA2(9, 130, 150, 255);
 
 	NavAreaDefinition DefaultHazardArea;
@@ -78,6 +89,9 @@ NavGameProfile* CreateNewGameProfile()
 	DefaultHazardArea.AreaId = 3;
 	DefaultHazardArea.FlagIndex = 1;
 	DefaultHazardArea.bCustom = false;
+	DefaultHazardArea.R = 192.0f;
+	DefaultHazardArea.G = 32.0f;
+	DefaultHazardArea.B = 32.0f;
 	DefaultHazardArea.DebugColor = duRGBA2(192, 32, 32, 255);
 
 	NewProfile.AreaDefinitions.push_back(DefaultNullArea);
@@ -91,6 +105,9 @@ NavGameProfile* CreateNewGameProfile()
 	DisabledFlagDef.TechnicalName = "NAV_FLAG_DISABLED";
 	DisabledFlagDef.FlagId = 1 << 15;
 	DisabledFlagDef.bCustom = false;
+	DisabledFlagDef.R = 8.0f;
+	DisabledFlagDef.G = 8.0f;
+	DisabledFlagDef.B = 8.0f;
 	DisabledFlagDef.DebugColor = duRGBA2(8, 8, 8, 255);
 
 	NavFlagDefinition WalkFlagDef;
@@ -99,6 +116,9 @@ NavGameProfile* CreateNewGameProfile()
 	WalkFlagDef.TechnicalName = "NAV_FLAG_WALK";
 	WalkFlagDef.FlagId = 1 << 0;
 	WalkFlagDef.bCustom = false;
+	WalkFlagDef.R = 0.0f;
+	WalkFlagDef.G = 192.0f;
+	WalkFlagDef.B = 255.0f;
 	WalkFlagDef.DebugColor = duRGBA2(0, 192, 255, 255);
 
 	NavFlagDefinition CrouchFlagDef;
@@ -107,6 +127,9 @@ NavGameProfile* CreateNewGameProfile()
 	CrouchFlagDef.TechnicalName = "NAV_FLAG_CROUCH";
 	CrouchFlagDef.FlagId = 1 << 1;
 	CrouchFlagDef.bCustom = false;
+	CrouchFlagDef.R = 9.0f;
+	CrouchFlagDef.G = 130.0f;
+	CrouchFlagDef.B = 150.0f;
 	CrouchFlagDef.DebugColor = duRGBA2(9, 130, 150, 255);
 
 	NavFlagDefinition JumpFlagDef;
@@ -115,6 +138,9 @@ NavGameProfile* CreateNewGameProfile()
 	JumpFlagDef.TechnicalName = "NAV_FLAG_JUMP";
 	JumpFlagDef.FlagId = 1 << 2;
 	JumpFlagDef.bCustom = false;
+	JumpFlagDef.R = 200.0f;
+	JumpFlagDef.G = 200.0f;
+	JumpFlagDef.B = 0.0f;
 	JumpFlagDef.DebugColor = duRGBA2(200, 200, 0, 255);
 
 	NavFlagDefinition LadderFlagDef;
@@ -123,6 +149,9 @@ NavGameProfile* CreateNewGameProfile()
 	LadderFlagDef.TechnicalName = "NAV_FLAG_LADDER";
 	LadderFlagDef.FlagId = 1 << 3;
 	LadderFlagDef.bCustom = false;
+	LadderFlagDef.R = 64.0f;
+	LadderFlagDef.G = 64.0f;
+	LadderFlagDef.B = 255.0f;
 	LadderFlagDef.DebugColor = duRGBA2(64, 64, 255, 255);
 
 	NavFlagDefinition FallFlagDef;
@@ -131,6 +160,9 @@ NavGameProfile* CreateNewGameProfile()
 	FallFlagDef.TechnicalName = "NAV_FLAG_FALL";
 	FallFlagDef.FlagId = 1 << 4;
 	FallFlagDef.bCustom = false;
+	FallFlagDef.R = 255.0f;
+	FallFlagDef.G = 64.0f;
+	FallFlagDef.B = 64.0f;
 	FallFlagDef.DebugColor = duRGBA2(255, 64, 64, 255);
 
 	NewProfile.FlagDefinitions.push_back(DisabledFlagDef);
@@ -696,12 +728,19 @@ int GetProfileMeshModifier()
 	return ProfileMeshModifier;
 }
 
+unsigned int* GetFlagColorModifier()
+{
+	return FlagColorModifier;
+}
+
 void ResetProfileMenus()
 {
 	EndModifyString();
 	AreaFlagModifier = -1;
 	ConnAreaModifier = -1;
 	ConnFlagModifier = -1;
+
+	FlagColorModifier = nullptr;
 }
 
 NavAreaDefinition* GetNavAreaById(unsigned short Id)
@@ -736,4 +775,23 @@ NavFlagDefinition* GetFlagByFlagId(unsigned int Id)
 	}
 
 	return nullptr;
+}
+
+void SetFlagColorModifier(unsigned int* NewColorIndex)
+{
+	FlagColorModifier = NewColorIndex;
+}
+
+void OutputProfileConfig(NavGameProfile* Profile)
+{
+	if (!Profile) { return; }
+
+	FILE* fp = fopen("Profiles/Profiles.yaml", "w+");
+
+	if (!fp) { return; }
+
+	fprintf(fp, "Hello");
+
+	fflush(fp);
+	fclose(fp);
 }
