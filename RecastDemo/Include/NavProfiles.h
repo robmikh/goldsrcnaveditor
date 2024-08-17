@@ -73,6 +73,7 @@ typedef struct _AGENT_PROFILE
 typedef struct _GAME_PROFILE
 {
 	string GameName = "Game";
+	string FileName = "";
 	vector<NavAreaDefinition> AreaDefinitions;
 	vector<NavFlagDefinition> FlagDefinitions;
 	vector<NavOffMeshConnectionDefinition> ConnectionDefinitions;

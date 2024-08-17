@@ -103,7 +103,7 @@ NavGameProfile* CreateNewGameProfile()
 	DisabledFlagDef.NavFlagIndex = 0;
 	DisabledFlagDef.FlagName = "Disabled";
 	DisabledFlagDef.TechnicalName = "NAV_FLAG_DISABLED";
-	DisabledFlagDef.FlagId = 1 << 15;
+	DisabledFlagDef.FlagId = 1 << 31;
 	DisabledFlagDef.bCustom = false;
 	DisabledFlagDef.R = 8.0f;
 	DisabledFlagDef.G = 8.0f;
@@ -165,12 +165,24 @@ NavGameProfile* CreateNewGameProfile()
 	FallFlagDef.B = 64.0f;
 	FallFlagDef.DebugColor = duRGBA2(255, 64, 64, 255);
 
+	NavFlagDefinition PlatformFlagDef;
+	PlatformFlagDef.NavFlagIndex = 5;
+	PlatformFlagDef.FlagName = "Platform";
+	PlatformFlagDef.TechnicalName = "NAV_FLAG_PLATFORM";
+	PlatformFlagDef.FlagId = 1 << 5;
+	PlatformFlagDef.bCustom = false;
+	PlatformFlagDef.R = 255.0f;
+	PlatformFlagDef.G = 32.0f;
+	PlatformFlagDef.B = 255.0f;
+	PlatformFlagDef.DebugColor = duRGBA2(255, 32, 255, 255);
+
 	NewProfile.FlagDefinitions.push_back(DisabledFlagDef);
 	NewProfile.FlagDefinitions.push_back(WalkFlagDef);
 	NewProfile.FlagDefinitions.push_back(CrouchFlagDef);
 	NewProfile.FlagDefinitions.push_back(JumpFlagDef);
 	NewProfile.FlagDefinitions.push_back(LadderFlagDef);
 	NewProfile.FlagDefinitions.push_back(FallFlagDef);
+	NewProfile.FlagDefinitions.push_back(PlatformFlagDef);
 
 	NavOffMeshConnectionDefinition WalkMoveDef;
 	WalkMoveDef.ConnIndex = 0;
@@ -207,11 +219,19 @@ NavGameProfile* CreateNewGameProfile()
 	FallMoveDef.FlagIndex = 5;
 	FallMoveDef.bCustom = false;
 
+	NavOffMeshConnectionDefinition PlatformMoveDef;
+	PlatformMoveDef.ConnIndex = 5;
+	PlatformMoveDef.ConnName = "Platform";
+	PlatformMoveDef.AreaIndex = 1;
+	PlatformMoveDef.FlagIndex = 6;
+	PlatformMoveDef.bCustom = false;
+
 	NewProfile.ConnectionDefinitions.push_back(WalkMoveDef);
 	NewProfile.ConnectionDefinitions.push_back(CrouchMoveDef);
 	NewProfile.ConnectionDefinitions.push_back(JumpMoveDef);
 	NewProfile.ConnectionDefinitions.push_back(LadderMoveDef);
 	NewProfile.ConnectionDefinitions.push_back(FallMoveDef);
+	NewProfile.ConnectionDefinitions.push_back(PlatformMoveDef);
 		
 	NavMeshDefinition DefaultMesh;
 	NewProfile.MeshDefinitions.push_back(DefaultMesh);
@@ -223,6 +243,7 @@ NavGameProfile* CreateNewGameProfile()
 	DefaultProfile.MovementFlags |= JumpFlagDef.FlagId;
 	DefaultProfile.MovementFlags |= FallFlagDef.FlagId;
 	DefaultProfile.MovementFlags |= LadderFlagDef.FlagId;
+	DefaultProfile.MovementFlags |= PlatformFlagDef.FlagId;
 	
 	for (int i = 0; i < 32; i++)
 	{
@@ -786,11 +807,138 @@ void OutputProfileConfig(NavGameProfile* Profile)
 {
 	if (!Profile) { return; }
 
-	FILE* fp = fopen("Profiles/Profiles.yaml", "w+");
+	string ProfileFileName = Profile->FileName;
+
+	if (ProfileFileName.empty())
+	{
+		ProfileFileName = Profile->GameName;
+
+		ProfileFileName.erase(std::remove_if(ProfileFileName.begin(), ProfileFileName.end(),
+			[](auto const& c) -> bool { return !std::isalnum(c); }), ProfileFileName.end());
+	}
+
+	if (ProfileFileName.empty())
+	{
+		ProfileFileName = "profile";
+	}
+
+	ProfileFileName.append(".yaml");
+
+	string FileName = "Profiles/" + ProfileFileName;
+
+	FILE* fp = fopen(FileName.c_str(), "w+");
 
 	if (!fp) { return; }
 
-	fprintf(fp, "Hello");
+	fprintf(fp, "---\n");
+	fprintf(fp, "profile_name: %s\n\n", Profile->GameName.c_str());
+
+	fprintf(fp, "flag_count: %u\n", Profile->FlagDefinitions.size());
+	fprintf(fp, "flags:\n");
+
+	int FlagIndex = 0;
+
+	for (auto it = Profile->FlagDefinitions.begin(); it != Profile->FlagDefinitions.end(); it++)
+	{
+		fprintf(fp, "\tid: %d\n", FlagIndex);
+		fprintf(fp, "\t\tflag_id: %u\n", it->FlagId);
+		fprintf(fp, "\t\tflag_name: %s\n", it->FlagName.c_str());
+		fprintf(fp, "\t\tflag_tech_name: %s\n", it->TechnicalName.c_str());
+		fprintf(fp, "\t\tis_custom: %s\n", (it->bCustom) ? "true" : "false");
+		fprintf(fp, "\t\tR: %.1f\n", it->R);
+		fprintf(fp, "\t\tG: %.1f\n", it->G);
+		fprintf(fp, "\t\tB: %.1f\n", it->B);
+
+		FlagIndex++;
+	}
+
+	fprintf(fp, "\n");
+
+	fprintf(fp, "area_count: %u\n", Profile->AreaDefinitions.size());
+	fprintf(fp, "areas:\n");
+
+	int AreaIndex = 0;
+
+	for (auto it = Profile->AreaDefinitions.begin(); it != Profile->AreaDefinitions.end(); it++)
+	{
+		fprintf(fp, "\tid: %d\n", AreaIndex);
+		fprintf(fp, "\t\tarea_id: %d\n", it->AreaId);
+		fprintf(fp, "\t\tarea_name: %s\n", it->AreaName.c_str());
+		fprintf(fp, "\t\tarea_tech_name: %s\n", it->TechnicalName.c_str());
+		fprintf(fp, "\t\tis_custom: %s\n", (it->bCustom) ? "true" : "false");
+		fprintf(fp, "\t\tflag_index: %d\n", it->FlagIndex);
+		fprintf(fp, "\t\tR: %.1f\n", it->R);
+		fprintf(fp, "\t\tG: %.1f\n", it->G);
+		fprintf(fp, "\t\tB: %.1f\n", it->B);
+
+		AreaIndex++;
+	}
+
+	fprintf(fp, "\n");
+
+	fprintf(fp, "connection_count: %u\n", Profile->AreaDefinitions.size());
+	fprintf(fp, "connections:\n");
+
+	int ConnIndex = 0;
+
+	for (auto it = Profile->ConnectionDefinitions.begin(); it != Profile->ConnectionDefinitions.end(); it++)
+	{
+		fprintf(fp, "\tid: %d\n", ConnIndex);
+		fprintf(fp, "\t\tconnection_name: %s\n", it->ConnName.c_str());
+		fprintf(fp, "\t\tarea_index: %u\n", it->AreaIndex);
+		fprintf(fp, "\t\tflag_index: %u\n", it->FlagIndex);
+		fprintf(fp, "\t\tis_custom: %s\n", (it->bCustom) ? "true" : "false");
+
+		ConnIndex++;
+	}
+
+	fprintf(fp, "\n");
+
+	fprintf(fp, "mesh_count: %u\n", Profile->MeshDefinitions.size());
+	fprintf(fp, "meshes:\n");
+
+	int MeshIndex = 0;
+
+	for (auto it = Profile->MeshDefinitions.begin(); it != Profile->MeshDefinitions.end(); it++)
+	{
+		fprintf(fp, "\tid: %d\n", MeshIndex);
+		fprintf(fp, "\t\tmesh_name: %s\n", it->NavMeshName.c_str());
+		fprintf(fp, "\t\tagent_radius: %.1f\n", it->AgentRadius);
+		fprintf(fp, "\t\tagent_stand_height: %.1f\n", it->AgentStandingHeight);
+		fprintf(fp, "\t\tagent_crouch_height: %.1f\n", it->AgentCrouchingHeight);
+		fprintf(fp, "\t\tmax_step: %.1f\n", it->MaxStep);
+		fprintf(fp, "\t\tmax_slope: %.1f\n", it->MaxSlope);
+
+		MeshIndex++;
+	}
+
+	fprintf(fp, "\n");
+
+	fprintf(fp, "agent_profile_count: %u\n", Profile->ProfileDefinitions.size());
+	fprintf(fp, "agent_profiles:\n");
+
+	int ProfileIndex = 0;
+
+	for (auto it = Profile->ProfileDefinitions.begin(); it != Profile->ProfileDefinitions.end(); it++)
+	{
+		fprintf(fp, "\tid: %d\n", ProfileIndex);
+		fprintf(fp, "\t\tprofile_name: %s\n", it->ProfileName.c_str());
+		fprintf(fp, "\t\tmesh_index: %d\n", ProfileIndex);
+		fprintf(fp, "\t\tarea_costs: {%.1f", it->AreaCosts[0]);
+
+		for (int i = 1; i < 32; i++)
+		{
+			fprintf(fp, ", %.1f", it->AreaCosts[i]);
+		}
+
+		fprintf(fp, "}\n");
+		fprintf(fp, "\t\tmovement_flags: %u\n", it->MovementFlags);
+
+		ProfileIndex++;
+	}
+
+	fprintf(fp, "\n");
+
 
 	fflush(fp);
 	fclose(fp);
