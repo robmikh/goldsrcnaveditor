@@ -209,6 +209,8 @@ struct MeshProcess : public dtTileCacheMeshProcess
 		// Update poly flags from areas.
 		for (int i = 0; i < params->polyCount; ++i)
 		{
+			unsigned char thisArea = polyAreas[i];
+
 			NavAreaDefinition* Area = GetAreaAtIndex(polyAreas[i]);
 
 			if (Area)
@@ -219,10 +221,6 @@ struct MeshProcess : public dtTileCacheMeshProcess
 
 				if (Flag)
 				{
-					if (Flag->NavFlagIndex == 0)
-					{
-						bool bBoop = true;
-					}
 					polyFlags[i] = Flag->FlagId;
 				}
 			}
@@ -1235,6 +1233,8 @@ bool Sample_TempObstacles::handleBuild()
 			ConnectionsToReadd.push_back(*con);
 		}
 	}
+
+	m_geom->rebuildChunkyTriMesh();
 
 	m_tmproc->init(m_geom);
 	

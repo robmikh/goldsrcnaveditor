@@ -376,9 +376,15 @@ NavFlagDefinition* GetFlagAtIndex(unsigned int Index)
 
 	if (!CurrentProfile) { return nullptr; }
 
-	if (Index >= CurrentProfile->FlagDefinitions.size()) { return nullptr; }
+	for (auto it = CurrentProfile->FlagDefinitions.begin(); it != CurrentProfile->FlagDefinitions.end(); it++)
+	{
+		if (it->NavFlagIndex == Index)
+		{
+			return &(*it);
+		}
+	}
 
-	return &CurrentProfile->FlagDefinitions[Index];
+	return nullptr;
 }
 
 NavAreaDefinition* GetAreaAtIndex(unsigned int Index)
@@ -387,9 +393,15 @@ NavAreaDefinition* GetAreaAtIndex(unsigned int Index)
 
 	if (!CurrentProfile) { return nullptr; }
 
-	if (Index < 0 || Index >= CurrentProfile->AreaDefinitions.size()) { return nullptr; }
+	for (auto it = CurrentProfile->AreaDefinitions.begin(); it != CurrentProfile->AreaDefinitions.end(); it++)
+	{
+		if (it->NavAreaIndex == Index)
+		{
+			return &(*it);
+		}
+	}
 
-	return &CurrentProfile->AreaDefinitions[Index];
+	return nullptr;
 }
 
 NavAgentProfile* GetAgentProfileAtIndex(unsigned int Index)

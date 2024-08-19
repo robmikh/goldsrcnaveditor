@@ -676,10 +676,6 @@ bool Sample_SoloMesh::handleBuild()
 
 				if (Flag)
 				{
-					if (Flag->NavFlagIndex == 0)
-					{
-						bool bBoop = true;
-					}
 					m_pmesh->flags[i] = Flag->FlagId;
 				}
 			}

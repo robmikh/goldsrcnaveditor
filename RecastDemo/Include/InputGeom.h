@@ -119,6 +119,8 @@ public:
 	const BuildSettings* getBuildSettings() const { return m_hasBuildSettings ? &m_buildSettings : 0; }
 	bool raycastMesh(float* src, float* dst, float& tmin);
 
+	void rebuildChunkyTriMesh();
+
 	/// @name Off-Mesh connections.
 	///@{
 	int getOffMeshConnectionCount() const { return m_offMeshConCount; }

@@ -509,6 +509,18 @@ bool InputGeom::raycastMesh(float* src, float* dst, float& tmin)
 	return hit;
 }
 
+void InputGeom::rebuildChunkyTriMesh()
+{
+	if (m_chunkyMesh) { delete m_chunkyMesh; }
+
+	m_chunkyMesh = new rcChunkyTriMesh;
+	if (!m_chunkyMesh)
+	{
+		return;
+	}
+	rcCreateChunkyTriMesh(m_mesh->getVerts(), m_mesh->getTris(), m_mesh->getTriCount(), 256, m_chunkyMesh, m_mesh->getSurfaceTypes());
+}
+
 void InputGeom::addOffMeshConnection(const float* spos, const float* epos, const float rad,
 									 unsigned char bidir, unsigned char area, unsigned int flags)
 {
