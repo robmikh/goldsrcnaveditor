@@ -1,6 +1,8 @@
 #include "NavProfiles.h"
 
 #include <vector>
+#include <fstream>
+#include <sstream>
 
 using std::vector;
 
@@ -39,6 +41,15 @@ void SetCurrentGameProfileIndex(unsigned int NewIndex)
 inline unsigned int duRGBA2(int r, int g, int b, int a)
 {
 	return ((unsigned int)r) | ((unsigned int)g << 8) | ((unsigned int)b << 16) | ((unsigned int)a << 24);
+}
+
+NavGameProfile* CreateNewBlankGameProfile()
+{
+	NavGameProfile NewProfile;
+
+	NavGameProfiles.push_back(NewProfile);
+
+	return &(*(prev(NavGameProfiles.end())));
 }
 
 NavGameProfile* CreateNewGameProfile()
@@ -803,6 +814,415 @@ void SetFlagColorModifier(unsigned int* NewColorIndex)
 	FlagColorModifier = NewColorIndex;
 }
 
+// trim from start (in place)
+inline void ltrim(std::string& s)
+{
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch)
+		{
+			return !std::isspace(ch);
+		}));
+}
+
+// trim from end (in place)
+inline void rtrim(std::string& s)
+{
+	s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch)
+		{
+			return !std::isspace(ch);
+		}).base(), s.end());
+}
+
+inline void trim(std::string& s)
+{
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch)
+		{
+			return !std::isspace(ch);
+		}));
+
+	s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch)
+		{
+			return !std::isspace(ch);
+		}).base(), s.end());
+}
+
+void LoadProfileConfig(string ProfileName)
+{
+	if (ProfileName.empty()) { return; }
+
+	const char* filename = ProfileName.c_str();
+
+	std::ifstream cFile(filename);
+	if (cFile.is_open())
+	{
+		NavGameProfile* LoadedProfile = CreateNewBlankGameProfile();
+
+		void* CurrentItem = nullptr;
+		int CurrentItemIndex = 0;
+
+		// 1 = flags, 2 = areas, 3 = connections, 4 = meshes, 5 = agent profiles
+		int mode = 0;
+
+		std::string line;
+		int CurrSkillIndex = -1;
+		bool bSkillLevelWarningGiven = false;
+
+		while (getline(cFile, line))
+		{
+			if (line.empty()) { continue; }
+
+			trim(line);
+
+			auto delimiterPos = line.find(":");
+
+			if (delimiterPos == std::string::npos) { continue; }
+
+			string key = line.substr(0, delimiterPos);
+			string value = line.substr(delimiterPos + 1);
+
+			trim(key);
+			trim(value);
+
+			auto keyChar = key.c_str();
+			auto valueChar = value.c_str();
+
+			if (!_stricmp(keyChar, "game_name"))
+			{
+				LoadedProfile->GameName = valueChar;
+				continue;
+			}
+
+			if (!_stricmp(keyChar, "flags"))
+			{
+				mode = 1;
+				continue;
+			}
+
+			if (!_stricmp(keyChar, "areas"))
+			{
+				mode = 2;
+				continue;
+			}
+
+			if (!_stricmp(keyChar, "connections"))
+			{
+				mode = 3;
+				continue;
+			}
+
+			if (!_stricmp(keyChar, "meshes"))
+			{
+				mode = 4;
+				continue;
+			}
+
+			if (!_stricmp(keyChar, "agent_profiles"))
+			{
+				mode = 5;
+				continue;
+			}
+
+			if (!_stricmp(keyChar, "id"))
+			{
+				CurrentItemIndex = (int)atoi(valueChar);
+
+				switch (mode)
+				{
+					case 1:
+					{
+						NavFlagDefinition NewFlag;
+						NewFlag.NavFlagIndex = CurrentItemIndex;
+						LoadedProfile->FlagDefinitions.push_back(NewFlag);
+						CurrentItem = &(*prev(LoadedProfile->FlagDefinitions.end()));
+					}
+					break;
+					case 2:
+					{
+						NavAreaDefinition NewArea;
+						NewArea.NavAreaIndex = CurrentItemIndex;
+						LoadedProfile->AreaDefinitions.push_back(NewArea);
+						CurrentItem = &(*prev(LoadedProfile->AreaDefinitions.end()));
+					}
+					break;
+					case 3:
+					{
+						NavOffMeshConnectionDefinition NewConnection;
+						NewConnection.ConnIndex = CurrentItemIndex;
+						LoadedProfile->ConnectionDefinitions.push_back(NewConnection);
+						CurrentItem = &(*prev(LoadedProfile->ConnectionDefinitions.end()));
+					}
+					break;
+					case 4:
+					{
+						NavMeshDefinition NewMesh;
+						LoadedProfile->MeshDefinitions.push_back(NewMesh);
+						CurrentItem = &(*prev(LoadedProfile->MeshDefinitions.end()));
+					}
+					break;
+					case 5:
+					{
+						NavAgentProfile NewProfile;
+						for (int i = 0; i < 32; i++)
+						{
+							NewProfile.AreaCosts[i] = 1.0f;
+						}
+						LoadedProfile->ProfileDefinitions.push_back(NewProfile);
+						CurrentItem = &(*prev(LoadedProfile->ProfileDefinitions.end()));
+					}
+					break;
+					default:
+						break;
+				}
+
+				continue;
+			}
+
+			if (mode == 1)
+			{
+				NavFlagDefinition* CurrFlag = (NavFlagDefinition*)CurrentItem;
+
+				if (!CurrFlag) { continue; }
+
+				if (!_stricmp(keyChar, "flag_id"))
+				{
+					CurrFlag->FlagId = (unsigned int)atoi(valueChar);
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "flag_name"))
+				{
+					CurrFlag->FlagName = valueChar;
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "flag_tech_name"))
+				{
+					CurrFlag->TechnicalName = valueChar;
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "is_custom"))
+				{
+					CurrFlag->bCustom = (!_stricmp(valueChar, "true"));
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "R"))
+				{
+					CurrFlag->R = (float)atof(valueChar);
+					CurrFlag->DebugColor = duRGBA2((int)CurrFlag->R, (int)CurrFlag->G, (int)CurrFlag->B, 255);
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "G"))
+				{
+					CurrFlag->G = (float)atof(valueChar);
+					CurrFlag->DebugColor = duRGBA2((int)CurrFlag->R, (int)CurrFlag->G, (int)CurrFlag->B, 255);
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "B"))
+				{
+					CurrFlag->B = (float)atof(valueChar);
+					CurrFlag->DebugColor = duRGBA2((int)CurrFlag->R, (int)CurrFlag->G, (int)CurrFlag->B, 255);
+					continue;
+				}
+
+				continue;
+			}
+
+			if (mode == 2)
+			{
+				NavAreaDefinition* CurrArea = (NavAreaDefinition*)CurrentItem;
+
+				if (!CurrArea) { continue; }
+
+				if (!_stricmp(keyChar, "area_id"))
+				{
+					CurrArea->AreaId = (unsigned char)atoi(valueChar);
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "area_name"))
+				{
+					CurrArea->AreaName = valueChar;
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "area_tech_name"))
+				{
+					CurrArea->TechnicalName = valueChar;
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "is_custom"))
+				{
+					CurrArea->bCustom = (!_stricmp(valueChar, "true"));
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "flag_index"))
+				{
+					CurrArea->FlagIndex = (unsigned int)atoi(valueChar);
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "R"))
+				{
+					CurrArea->R = (float)atof(valueChar);
+					CurrArea->DebugColor = duRGBA2((int)CurrArea->R, (int)CurrArea->G, (int)CurrArea->B, 255);
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "G"))
+				{
+					CurrArea->G = (float)atof(valueChar);
+					CurrArea->DebugColor = duRGBA2((int)CurrArea->R, (int)CurrArea->G, (int)CurrArea->B, 255);
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "B"))
+				{
+					CurrArea->B = (float)atof(valueChar);
+					CurrArea->DebugColor = duRGBA2((int)CurrArea->R, (int)CurrArea->G, (int)CurrArea->B, 255);
+					continue;
+				}
+
+				continue;
+			}
+
+			if (mode == 3)
+			{
+				NavOffMeshConnectionDefinition* CurrConnection = (NavOffMeshConnectionDefinition*)CurrentItem;
+
+				if (!CurrConnection) { continue; }
+
+				if (!_stricmp(keyChar, "connection_name"))
+				{
+					CurrConnection->ConnName = valueChar;
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "area_index"))
+				{
+					CurrConnection->AreaIndex = (unsigned int)atoi(valueChar);
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "flag_index"))
+				{
+					CurrConnection->FlagIndex = (unsigned int)atoi(valueChar);
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "is_custom"))
+				{
+					CurrConnection->bCustom = (!_stricmp(valueChar, "true"));
+					continue;
+				}
+
+				continue;
+			}
+
+			if (mode == 4)
+			{
+				NavMeshDefinition* CurrMesh = (NavMeshDefinition*)CurrentItem;
+
+				if (!CurrMesh) { continue; }
+
+				if (!_stricmp(keyChar, "mesh_name"))
+				{
+					CurrMesh->NavMeshName = valueChar;
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "agent_radius"))
+				{
+					CurrMesh->AgentRadius = (float)atof(valueChar);
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "agent_stand_height"))
+				{
+					CurrMesh->AgentStandingHeight = (float)atof(valueChar);
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "agent_crouch_height"))
+				{
+					CurrMesh->AgentCrouchingHeight = (float)atof(valueChar);
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "max_step"))
+				{
+					CurrMesh->MaxStep = (float)atof(valueChar);
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "max_slope"))
+				{
+					CurrMesh->MaxSlope = (float)atof(valueChar);
+					continue;
+				}
+
+				continue;
+			}
+
+			if (mode == 5)
+			{
+				NavAgentProfile* CurrAgent = (NavAgentProfile*)CurrentItem;
+
+				if (!CurrAgent) { continue; }
+
+				if (!_stricmp(keyChar, "agent_name"))
+				{
+					CurrAgent->ProfileName = valueChar;
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "mesh_index"))
+				{
+					CurrAgent->NavMeshIndex = (unsigned int)atoi(valueChar);
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "area_costs"))
+				{
+					int Index = 0;
+
+					line.erase(remove(line.begin(), line.end(), '{'), line.end());
+					line.erase(remove(line.begin(), line.end(), '}'), line.end());
+
+					std::stringstream s_stream(line);
+
+					while (s_stream.good() && Index < 32)
+					{
+						string substr;
+						getline(s_stream, substr, ','); //get first string delimited by comma
+						float NewCost = (float)atof(substr.c_str());
+
+						CurrAgent->AreaCosts[Index] = NewCost;
+						Index++;
+					}
+
+					CurrAgent->NavMeshIndex = (unsigned int)atoi(valueChar);
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "movement_flags"))
+				{
+					CurrAgent->MovementFlags = (unsigned int)atoi(valueChar);
+					continue;
+				}
+
+				continue;
+			}
+
+		}
+
+	}
+}
+
 void OutputProfileConfig(NavGameProfile* Profile)
 {
 	if (!Profile) { return; }
@@ -831,7 +1251,7 @@ void OutputProfileConfig(NavGameProfile* Profile)
 	if (!fp) { return; }
 
 	fprintf(fp, "---\n");
-	fprintf(fp, "profile_name: %s\n\n", Profile->GameName.c_str());
+	fprintf(fp, "game_name: %s\n\n", Profile->GameName.c_str());
 
 	fprintf(fp, "flag_count: %u\n", Profile->FlagDefinitions.size());
 	fprintf(fp, "flags:\n");
@@ -922,13 +1342,13 @@ void OutputProfileConfig(NavGameProfile* Profile)
 	for (auto it = Profile->ProfileDefinitions.begin(); it != Profile->ProfileDefinitions.end(); it++)
 	{
 		fprintf(fp, "\tid: %d\n", ProfileIndex);
-		fprintf(fp, "\t\tprofile_name: %s\n", it->ProfileName.c_str());
+		fprintf(fp, "\t\tagent_name: %s\n", it->ProfileName.c_str());
 		fprintf(fp, "\t\tmesh_index: %d\n", ProfileIndex);
 		fprintf(fp, "\t\tarea_costs: {%.1f", it->AreaCosts[0]);
 
 		for (int i = 1; i < 32; i++)
 		{
-			fprintf(fp, ", %.1f", it->AreaCosts[i]);
+			fprintf(fp, ",%.1f", it->AreaCosts[i]);
 		}
 
 		fprintf(fp, "}\n");

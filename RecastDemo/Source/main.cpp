@@ -557,6 +557,16 @@ int main(int /*argc*/, char** /*argv*/)
 			int Index = GetCurrentGameProfileIndex();
 			vector<NavGameProfile> GameProfiles = GetAllGameProfiles();
 
+			if (GameProfiles.size() == 0)
+			{
+				scanDirectory("Profiles", ".yaml", files);
+
+				for (auto fileIt = files.begin(); fileIt != files.end(); fileIt++)
+				{
+					LoadProfileConfig("Profiles/" + *fileIt);
+				}
+			}
+
 			int CurrIndex = 0;
 
 			for (auto it = GameProfiles.begin(); it != GameProfiles.end(); it++)

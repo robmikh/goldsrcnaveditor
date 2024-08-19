@@ -95,6 +95,7 @@ vector<NavAgentProfile> GetAllAgentProfileDefinitions();
 unsigned int GetCurrentGameProfileIndex();
 void SetCurrentGameProfileIndex(unsigned int NewIndex);
 
+NavGameProfile* CreateNewBlankGameProfile();
 NavGameProfile* CreateNewGameProfile();
 NavAreaDefinition* CreateNewAreaDefinition();
 NavFlagDefinition* CreateNewMovementFlag();
@@ -155,5 +156,7 @@ unsigned int* GetFlagColorModifier();
 void ResetProfileMenus();
 
 void OutputProfileConfig(NavGameProfile* Profile);
+
+void LoadProfileConfig(std::string ProfileName);
 
 #endif // NAV_PROFILES_H
