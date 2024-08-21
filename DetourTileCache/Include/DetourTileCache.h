@@ -87,6 +87,7 @@ struct dtTileCacheParams
 	float cs, ch;
 	int width, height;
 	float walkableHeight;
+	float crouchHeight;
 	float walkableRadius;
 	float walkableClimb;
 	float maxSimplificationError;

@@ -30,6 +30,8 @@
 #include "RecastDebugDraw.h"
 #include "DetourDebugDraw.h"
 
+#include "NavProfiles.h"
+
 #ifdef WIN32
 #	define snprintf _snprintf
 #endif
@@ -129,18 +131,18 @@ void ConvexVolumeTool::handleMenu()
 
 	imguiLabel("Area Type");
 	imguiIndent();
-	if (imguiCheck("Ground", m_areaType == SAMPLE_POLYAREA_GROUND))
-		m_areaType = SAMPLE_POLYAREA_GROUND;
-	if (imguiCheck("Water", m_areaType == SAMPLE_POLYAREA_WATER))
-		m_areaType = SAMPLE_POLYAREA_WATER;
-	if (imguiCheck("Road", m_areaType == SAMPLE_POLYAREA_ROAD))
-		m_areaType = SAMPLE_POLYAREA_ROAD;
-	if (imguiCheck("Door", m_areaType == SAMPLE_POLYAREA_DOOR))
-		m_areaType = SAMPLE_POLYAREA_DOOR;
-	if (imguiCheck("Grass", m_areaType == SAMPLE_POLYAREA_GRASS))
-		m_areaType = SAMPLE_POLYAREA_GRASS;
-	if (imguiCheck("Jump", m_areaType == SAMPLE_POLYAREA_JUMP))
-		m_areaType = SAMPLE_POLYAREA_JUMP;
+
+
+	vector<NavAreaDefinition> AllAreas = GetAllNavAreaDefinitions();
+
+	for (auto it = AllAreas.begin(); it != AllAreas.end(); it++)
+	{
+		if (imguiCheck(it->AreaName.c_str(), m_areaType == it->AreaId))
+		{
+			m_areaType = it->AreaId;
+		}
+	}
+
 	imguiUnindent();
 
 	imguiSeparator();

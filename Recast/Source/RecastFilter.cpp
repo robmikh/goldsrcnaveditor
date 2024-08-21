@@ -206,10 +206,6 @@ void rcFilterWalkableLowHeightSpans(rcContext* context, const int walkableHeight
 						span->area = 1;
 					}
 				}
-				else if (span->area == 60)
-				{
-					bool bBoop = true;
-				}
 			}
 		}
 	}

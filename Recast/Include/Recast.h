@@ -245,6 +245,7 @@ struct rcConfig
 	/// Minimum floor to 'ceiling' height that will still allow the floor area to 
 	/// be considered walkable. [Limit: >= 3] [Units: vx] 
 	int walkableHeight;
+	int crouchHeight;
 	
 	/// Maximum ledge height that is considered to still be traversable. [Limit: >=0] [Units: vx] 
 	int walkableClimb;

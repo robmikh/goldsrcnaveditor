@@ -382,7 +382,7 @@ void NavMeshTesterTool::handleMenu()
 			if (m_ProfileIndex != thisIndex)
 			{
 				m_filter.setIncludeFlags(it->MovementFlags);
-				m_filter.setExcludeFlags(1 << 15);
+				m_filter.setExcludeFlags(1 << 31);
 
 				vector<NavAreaDefinition> AllAreas = GetAllNavAreaDefinitions();
 
@@ -393,6 +393,8 @@ void NavMeshTesterTool::handleMenu()
 			}
 
 			m_ProfileIndex = thisIndex;
+
+			m_sample->setSelectedNavMesh(it->NavMeshIndex);
 
 			recalc();
 		}
@@ -617,6 +619,9 @@ void NavMeshTesterTool::reset()
 
 void NavMeshTesterTool::recalc()
 {
+	m_navMesh = m_sample->getNavMesh();
+	m_navQuery = m_sample->getNavMeshQuery();
+
 	if (!m_navMesh)
 		return;
 	

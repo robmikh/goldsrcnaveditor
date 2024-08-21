@@ -22,6 +22,7 @@
 #include "Recast.h"
 #include "SampleInterfaces.h"
 
+#include <string>
 
 /// Tool types.
 enum SampleToolType
@@ -97,6 +98,13 @@ struct SampleToolState {
 	virtual void handleUpdate(const float dt) = 0;
 };
 
+struct NavMeshEntry
+{
+	class dtNavMesh* m_navMesh;
+	class dtNavMeshQuery* m_navQuery;
+	class dtTileCache* m_tileCache;
+};
+
 class Sample
 {
 protected:
@@ -106,6 +114,10 @@ protected:
 	class dtCrowd* m_crowd;
 
 	unsigned char m_navMeshDrawFlags;
+
+	int m_SelectedNavMeshIndex;
+
+	struct NavMeshEntry m_NavMeshArray[8];
 
 	float m_cellSize;
 	float m_cellHeight;
@@ -133,6 +145,8 @@ protected:
 
 	SampleDebugDraw m_dd;
 	
+	std::string ExportFolder = ".";
+
 	dtNavMesh* loadAll(const char* path);
 	void saveAll(const char* path, const dtNavMesh* mesh);
 
@@ -141,6 +155,8 @@ public:
 	virtual ~Sample();
 	
 	void setContext(BuildContext* ctx) { m_ctx = ctx; }
+
+	void SetExportFolder(std::string NewFolder) { ExportFolder = NewFolder; }
 	
 	void setTool(SampleTool* tool);
 	SampleToolState* getToolState(int type) { return m_toolStates[type]; }
@@ -162,8 +178,9 @@ public:
 	virtual void collectSettings(struct BuildSettings& settings);
 
 	virtual class InputGeom* getInputGeom() { return m_geom; }
-	virtual class dtNavMesh* getNavMesh() { return m_navMesh; }
-	virtual class dtNavMeshQuery* getNavMeshQuery() { return m_navQuery; }
+	virtual class dtNavMesh* getNavMesh() { return m_NavMeshArray[m_SelectedNavMeshIndex].m_navMesh; }
+	virtual class dtNavMeshQuery* getNavMeshQuery() { return m_NavMeshArray[m_SelectedNavMeshIndex].m_navQuery; }
+	virtual class dtTileCache* getTileCache() { return m_NavMeshArray[m_SelectedNavMeshIndex].m_tileCache; }
 	virtual class dtCrowd* getCrowd() { return m_crowd; }
 	virtual float getAgentRadius() { return m_agentRadius; }
 	virtual float getAgentHeight() { return m_agentHeight; }
@@ -188,6 +205,8 @@ public:
 	virtual void removeOffMeshConnection(const float* pos);
 
 	virtual void drawOffMeshConnections(duDebugDraw* dd);
+
+	void setSelectedNavMesh(int NewIndex);
 
 private:
 	// Explicitly disabled copy constructor and copy assignment operator.

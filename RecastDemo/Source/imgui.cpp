@@ -789,7 +789,6 @@ bool showNavProfileDetails(const int ProfileIndex)
 
 	NavMeshDefinition* AssociatedNavMesh = GetMeshAtIndex(ProfileDef->NavMeshIndex);
 
-
 	if (imguiButton(AssociatedNavMesh->NavMeshName.c_str(), true))
 	{
 		if (GetProfileMeshModifier() > -1)

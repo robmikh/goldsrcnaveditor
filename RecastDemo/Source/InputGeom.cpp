@@ -608,6 +608,7 @@ void InputGeom::drawConvexVolumes(struct duDebugDraw* dd, bool /*hilight*/)
 	for (int i = 0; i < m_volumeCount; ++i)
 	{
 		const ConvexVolume* vol = &m_volumes[i];
+
 		unsigned int col = duTransCol(dd->areaToCol(vol->area), 32);
 		for (int j = 0, k = vol->nverts-1; j < vol->nverts; k = j++)
 		{

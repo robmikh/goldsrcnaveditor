@@ -607,12 +607,6 @@ bool rcMeshLoaderObj::loadBSP(const std::string& filename)
 			{
 				triData->surfaceType[surftypeCounter] = faceType;
 
-				if (faceType == MT_MODEL_ILLUSIONARY)
-				{
-					bool bBoop = true;
-				}
-
-
 				m_triModels[surftypeCounter] = modelIndex;
 				triData->tris[triCounter++] = sIndices[0];
 				triData->tris[triCounter++] = sIndices[++indexCounter];

@@ -1217,7 +1217,6 @@ void LoadProfileConfig(string ProfileName)
 						Index++;
 					}
 
-					CurrAgent->NavMeshIndex = (unsigned int)atoi(valueChar);
 					continue;
 				}
 
@@ -1355,7 +1354,7 @@ void OutputProfileConfig(NavGameProfile* Profile)
 	{
 		fprintf(fp, "\tid: %d\n", ProfileIndex);
 		fprintf(fp, "\t\tagent_name: %s\n", it->ProfileName.c_str());
-		fprintf(fp, "\t\tmesh_index: %d\n", ProfileIndex);
+		fprintf(fp, "\t\tmesh_index: %d\n", it->NavMeshIndex);
 		fprintf(fp, "\t\tarea_costs: {%.1f", it->AreaCosts[0]);
 
 		for (int i = 1; i < 32; i++)

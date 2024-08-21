@@ -370,11 +370,6 @@ void rcMarkWalkableTriangles(rcContext* context, const float walkableSlopeAngle,
 		}
 		else
 		{
-			if (surfTypes[i] == 3)
-			{
-				bool bBoop = true;
-			}
-
 			triAreaIDs[i] = surfTypes[i];
 		}
 	}

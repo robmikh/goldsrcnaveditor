@@ -173,6 +173,8 @@ int main(int /*argc*/, char** /*argv*/)
 	vector<string> files;
 	const string meshesFolder = "Meshes";
 	string meshName = "Choose Mesh...";
+
+	string exportDirectory = ".";
 	
 	float markerPosition[3] = {0, 0, 0};
 	bool markerPositionSet = false;
@@ -967,6 +969,7 @@ int main(int /*argc*/, char** /*argv*/)
 					sample->handleMeshChanged(geom);
 				}
 				showSample = false;
+				sample->SetExportFolder(exportDirectory.append("/"));
 			}
 
 			if (geom || sample)

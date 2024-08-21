@@ -227,7 +227,7 @@ void Sample_TileMesh::handleSettings()
 {
 	Sample::handleCommonSettings();
 
-	if (imguiCheck("Keep Itermediate Results", m_keepInterResults))
+	if (imguiCheck("Keep Intermediate Results", m_keepInterResults))
 		m_keepInterResults = !m_keepInterResults;
 
 	if (imguiCheck("Build All Tiles", m_buildAll))
@@ -412,7 +412,7 @@ void Sample_TileMesh::handleDebugMode()
 		
 	if (unavail)
 	{
-		imguiValue("Tick 'Keep Itermediate Results'");
+		imguiValue("Tick 'Keep Intermediate Results'");
 		imguiValue("rebuild some tiles to see");
 		imguiValue("more debug mode options.");
 	}

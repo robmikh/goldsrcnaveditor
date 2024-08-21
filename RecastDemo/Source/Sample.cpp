@@ -26,9 +26,12 @@
 #include "DetourNavMesh.h"
 #include "DetourNavMeshQuery.h"
 #include "DetourCrowd.h"
+#include "DetourTileCache.h"
 #include "imgui.h"
 #include "SDL.h"
 #include "SDL_opengl.h"
+
+#include "NavProfiles.h"
 
 #ifdef WIN32
 #	define snprintf _snprintf
@@ -66,6 +69,7 @@ unsigned int SampleDebugDraw::areaToCol(unsigned int area)
 }
 
 Sample::Sample() :
+	m_SelectedNavMeshIndex(0),
 	m_geom(0),
 	m_navMesh(0),
 	m_navQuery(0),
@@ -77,12 +81,28 @@ Sample::Sample() :
 	m_tool(0),
 	m_ctx(0)
 {
+	
 	resetCommonSettings();
+
+	memset(m_NavMeshArray, 0, sizeof(m_NavMeshArray));
+
+	vector<NavMeshDefinition> AllMeshes = GetAllMeshDefinitions();
+
+	int MeshIndex = 0;
+
+	for (auto it = AllMeshes.begin(); it != AllMeshes.end(); it++)
+	{
+		m_NavMeshArray[MeshIndex].m_navQuery = dtAllocNavMeshQuery();
+		MeshIndex++;
+	}
+
 	m_navQuery = dtAllocNavMeshQuery();
 	m_crowd = dtAllocCrowd();
 
 	for (int i = 0; i < MAX_TOOLS; i++)
 		m_toolStates[i] = 0;
+
+
 }
 
 Sample::~Sample()
@@ -93,6 +113,14 @@ Sample::~Sample()
 	delete m_tool;
 	for (int i = 0; i < MAX_TOOLS; i++)
 		delete m_toolStates[i];
+
+	for (int i = 0; i < 8; i++)
+	{
+		dtFreeNavMesh(m_NavMeshArray[i].m_navMesh);
+		dtFreeNavMeshQuery(m_NavMeshArray[i].m_navQuery);
+		dtFreeTileCache(m_NavMeshArray[i].m_tileCache);
+	}
+
 }
 
 void Sample::setTool(SampleTool* tool)
@@ -178,6 +206,7 @@ void Sample::collectSettings(BuildSettings& settings)
 
 void Sample::resetCommonSettings()
 {
+	m_SelectedNavMeshIndex = 0;
 	m_cellSize = 3.0f;
 	m_cellHeight = 3.0f;
 	m_agentHeight = 72.0f;
@@ -196,9 +225,28 @@ void Sample::resetCommonSettings()
 
 void Sample::handleCommonSettings()
 {
-	imguiLabel("Rasterization");
-	imguiSlider("Cell Size", &m_cellSize, 1.0f, 10.0f, 0.1f);
-	imguiSlider("Cell Height", &m_cellHeight, 1.0f, 10.0f, 0.1f);
+	imguiLabel("Nav Meshes");
+
+	NavGameProfile* CurrentProfile = GetCurrentGameProfile();
+
+	int MeshIndex = 0;
+
+	for (auto it = CurrentProfile->MeshDefinitions.begin(); it != CurrentProfile->MeshDefinitions.end(); it++)
+	{
+		if (imguiCheck(it->NavMeshName.c_str(), m_SelectedNavMeshIndex == MeshIndex, true))
+		{
+			m_SelectedNavMeshIndex = MeshIndex;
+		}
+
+		MeshIndex++;
+	}
+
+	imguiSeparatorLine();
+	
+
+	//imguiLabel("Rasterization");
+	//imguiSlider("Cell Size", &m_cellSize, 1.0f, 10.0f, 0.1f);
+	//imguiSlider("Cell Height", &m_cellHeight, 1.0f, 10.0f, 0.1f);
 	
 	if (m_geom)
 	{
@@ -218,7 +266,7 @@ void Sample::handleCommonSettings()
 	imguiSlider("Max Climb", &m_agentMaxClimb, 1.0f, 50.0f, 1.0f);
 	imguiSlider("Max Slope", &m_agentMaxSlope, 0.0f, 90.0f, 1.0f);
 	
-	imguiSeparator();
+	/*imguiSeparator();
 	imguiLabel("Region");
 	imguiSlider("Min Region Size", &m_regionMinSize, 0.0f, 150.0f, 1.0f);
 	imguiSlider("Merged Region Size", &m_regionMergeSize, 0.0f, 150.0f, 1.0f);
@@ -250,7 +298,7 @@ void Sample::handleCommonSettings()
 	imguiSeparator();
 	imguiLabel("Detail Mesh");
 	imguiSlider("Sample Distance", &m_detailSampleDist, 0.0f, 32.0f, 1.0f);
-	imguiSlider("Max Sample Error", &m_detailSampleMaxError, 0.0f, 32.0f, 1.0f);
+	imguiSlider("Max Sample Error", &m_detailSampleMaxError, 0.0f, 32.0f, 1.0f);*/
 	
 	imguiSeparator();
 }
@@ -513,4 +561,15 @@ void Sample::drawOffMeshConnections(duDebugDraw* dd)
 	{
 		m_geom->drawOffMeshConnections(dd);
 	}
+}
+
+void Sample::setSelectedNavMesh(int NewIndex)
+{
+	if (NewIndex < 0 || NewIndex >= GetNumNavMeshes())
+	{
+		m_SelectedNavMeshIndex = 0;
+		return;
+	}
+
+	m_SelectedNavMeshIndex = NewIndex;
 }

@@ -124,9 +124,7 @@ bool rcErodeWalkableArea(rcContext* context, const int erosionRadius, rcCompactH
 					rcCompactSpan s = compactHeightfield.spans[spanIndex];
 					rcCompactCell nc = compactHeightfield.cells[neighborX + neighborZ * zStride];
 
-					
-
-					if (compactHeightfield.areas[neighborSpanIndex] == RC_NULL_AREA)
+					if (neighborSpanIndex >= compactHeightfield.spanCount || compactHeightfield.areas[neighborSpanIndex] == RC_NULL_AREA)
 					{
 						break;
 					}
