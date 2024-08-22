@@ -291,6 +291,32 @@ NavAreaDefinition* CreateNewAreaDefinition()
 	return &(*(prev(CurrentProfile->AreaDefinitions.end())));
 }
 
+int GetIndexForNewNavHint()
+{
+	NavGameProfile* CurrentProfile = GetCurrentGameProfile();
+
+	if (!CurrentProfile) { return 0; }
+
+	int Result = 0;
+	bool bFound = false;
+
+	while (!bFound)
+	{
+		bFound = true;
+		for (auto it = CurrentProfile->NavHints.begin(); it != CurrentProfile->NavHints.end(); it++)
+		{
+			if (it->HintIndex == Result)
+			{
+				bFound = false;
+				Result++;
+				break;
+			}
+		}
+	}
+
+	return Result;
+}
+
 int GetIndexForNewFlag()
 {
 	NavGameProfile* CurrentProfile = GetCurrentGameProfile();
@@ -415,6 +441,17 @@ NavAgentProfile* GetAgentProfileAtIndex(unsigned int Index)
 	return &CurrentProfile->ProfileDefinitions[Index];
 }
 
+NavHintDefinition* GetNavHintAtIndex(unsigned int Index)
+{
+	NavGameProfile* CurrentProfile = GetCurrentGameProfile();
+
+	if (!CurrentProfile) { return nullptr; }
+
+	if (Index < 0 || Index >= CurrentProfile->NavHints.size()) { return nullptr; }
+
+	return &CurrentProfile->NavHints[Index];
+}
+
 NavMeshDefinition* GetMeshAtIndex(unsigned int Index)
 {
 	NavGameProfile* CurrentProfile = GetCurrentGameProfile();
@@ -489,6 +526,34 @@ vector<NavAgentProfile> GetAllAgentProfileDefinitions()
 	if (!CurrentProfile) { return vector<NavAgentProfile>(); }
 
 	return CurrentProfile->ProfileDefinitions;
+}
+
+vector<NavHintDefinition> GetAllNavHintDefinitions()
+{
+	NavGameProfile* CurrentProfile = GetCurrentGameProfile();
+
+	if (!CurrentProfile) { return vector<NavHintDefinition>(); }
+
+	return CurrentProfile->NavHints;
+}
+
+NavHintDefinition* CreateNewNavHintType()
+{
+	NavGameProfile* CurrentProfile = GetCurrentGameProfile();
+
+	if (!CurrentProfile) { return nullptr; }
+
+	int NewHintIndex = GetIndexForNewNavHint();
+
+	NavHintDefinition NewHintDef;
+	NewHintDef.HintIndex = NewHintIndex;
+	NewHintDef.HintName = "Custom Hint";
+	NewHintDef.TechnicalName = "NAV_HINT_CUSTOM";
+	NewHintDef.HintId = 1 << NewHintIndex;
+
+	CurrentProfile->NavHints.push_back(NewHintDef);
+
+	return &(*(prev(CurrentProfile->NavHints.end())));
 }
 
 NavFlagDefinition* CreateNewMovementFlag()
@@ -582,6 +647,17 @@ void RemoveMeshDefinition(unsigned int RemoveIndex)
 	if (!CurrentProfile || CurrentProfile->MeshDefinitions.size() <= 1 || RemoveIndex >= CurrentProfile->MeshDefinitions.size()) { return; }
 
 	CurrentProfile->MeshDefinitions.erase((CurrentProfile->MeshDefinitions.begin() + RemoveIndex));
+}
+
+void RemoveHintType(unsigned int RemoveIndex)
+{
+	NavGameProfile* CurrentProfile = GetCurrentGameProfile();
+
+	if (!CurrentProfile) { return; }
+
+	if (RemoveIndex >= CurrentProfile->NavHints.size()) { return; }
+
+	CurrentProfile->NavHints.erase((CurrentProfile->NavHints.begin() + RemoveIndex));
 }
 
 void RemoveConnectionType(unsigned int RemoveIndex)
@@ -871,7 +947,7 @@ void LoadProfileConfig(string ProfileName)
 		void* CurrentItem = nullptr;
 		int CurrentItemIndex = 0;
 
-		// 1 = flags, 2 = areas, 3 = connections, 4 = meshes, 5 = agent profiles
+		// 1 = flags, 2 = areas, 3 = connections, 4 = meshes, 5 = agent profiles, 6 = Nav Hints
 		int mode = 0;
 
 		std::string line;
@@ -933,6 +1009,12 @@ void LoadProfileConfig(string ProfileName)
 				continue;
 			}
 
+			if (!_stricmp(keyChar, "nav_hints"))
+			{
+				mode = 6;
+				continue;
+			}
+
 			if (!_stricmp(keyChar, "id"))
 			{
 				CurrentItemIndex = (int)atoi(valueChar);
@@ -979,6 +1061,13 @@ void LoadProfileConfig(string ProfileName)
 						}
 						LoadedProfile->ProfileDefinitions.push_back(NewProfile);
 						CurrentItem = &(*prev(LoadedProfile->ProfileDefinitions.end()));
+					}
+					break;
+					case 6:
+					{
+						NavHintDefinition NewHint;
+						LoadedProfile->NavHints.push_back(NewHint);
+						CurrentItem = &(*prev(LoadedProfile->NavHints.end()));
 					}
 					break;
 					default:
@@ -1229,6 +1318,39 @@ void LoadProfileConfig(string ProfileName)
 				continue;
 			}
 
+			if (mode == 6)
+			{
+				NavHintDefinition* CurrHint = (NavHintDefinition*)CurrentItem;
+
+				if (!CurrHint) { continue; }
+
+				if (!_stricmp(keyChar, "hint_index"))
+				{
+					CurrHint->HintIndex = (unsigned int)atoi(valueChar);
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "hint_name"))
+				{
+					CurrHint->HintName = valueChar;
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "hint_technical_name"))
+				{
+					CurrHint->TechnicalName = valueChar;
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "hint_id"))
+				{
+					CurrHint->HintId = (unsigned int)atoi(valueChar);
+					continue;
+				}
+
+				continue;
+			}
+
 		}
 
 	}
@@ -1370,6 +1492,21 @@ void OutputProfileConfig(NavGameProfile* Profile)
 
 	fprintf(fp, "\n");
 
+	fprintf(fp, "nav_hint_count: %u\n", Profile->ProfileDefinitions.size());
+	fprintf(fp, "nav_hints:\n");
+
+	int HintIndex = 0;
+
+	for (auto it = Profile->NavHints.begin(); it != Profile->NavHints.end(); it++)
+	{
+		fprintf(fp, "\tid: %d\n", HintIndex);
+		fprintf(fp, "\t\thint_index: %u\n", it->HintIndex);
+		fprintf(fp, "\t\thint_name: %s\n", it->HintName.c_str());
+		fprintf(fp, "\t\thint_technical_name: %s\n", it->TechnicalName.c_str());
+		fprintf(fp, "\t\thint_id: %u\n", it->HintId);
+
+		HintIndex++;
+	}
 
 	fflush(fp);
 	fclose(fp);

@@ -65,6 +65,7 @@ bool addAreaRow(const int AreaIndex);
 bool addFlagRow(const int FlagIndex);
 bool addConnectionRow(const int ConnectionIndex);
 bool addNavMeshRow(const int MeshIndex);
+bool addNavHintRow(const int HintIndex);
 bool addNavProfileEntryRow(const int ProfileIndex);
 bool showNavProfileDetails(const int ProfileIndex);
 

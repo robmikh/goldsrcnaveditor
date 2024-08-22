@@ -883,6 +883,95 @@ bool showNavProfileDetails(const int ProfileIndex)
 
 }
 
+bool addNavHintRow(const int HintIndex)
+{
+	NavHintDefinition* HintDef = GetNavHintAtIndex(HintIndex);
+
+	if (!HintDef) { return false; }
+
+	const int x = g_state.widgetX;
+	const int y = g_state.widgetY - ROW_HEIGHT;
+	const int w = g_state.widgetW;
+	const int h = ROW_HEIGHT;
+
+	addGfxCmdRect((float)x, (float)y, (float)w, (float)h, imguiRGBA(0, 0, 0, 192));
+
+	int TotalWidth = w - 10;
+
+	int IDWidth = (int)(ceilf((float)TotalWidth * 0.1f));
+	int NameWidth = (int)(ceilf((float)TotalWidth * 0.4f));
+	int TechNameWidth = (int)(ceilf((float)TotalWidth * 0.4f));
+	int DeleteWidth = (int)(ceilf((float)TotalWidth * 0.1f));
+
+	int IDStartX = x + 5;
+	int NameStartX = IDStartX + IDWidth;
+	int TechNameStartX = NameStartX + NameWidth;
+	int DeleteStartX = TechNameStartX + TechNameWidth;
+
+	int HeaderStartY = y + (h - (TEXT_HEIGHT + 10));
+	int RowStartY = y + 20;
+
+	addGfxCmdText(IDStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "ID", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(NameStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Descriptive Name", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(TechNameStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Technical Name", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(DeleteStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Delete", imguiRGBA(255, 255, 255, 200));
+
+	char RowEntry[128];
+
+	sprintf(RowEntry, "%d", HintIndex);
+	addGfxCmdText(IDStartX, RowStartY, IMGUI_ALIGN_LEFT, RowEntry, imguiRGBA(255, 255, 255, 200));
+
+	int endWidgetX = g_state.widgetX;
+	int endWidgetY = g_state.widgetY;
+	int endWidgetW = g_state.widgetW;
+
+	g_state.widgetX = NameStartX;
+	g_state.widgetW = TechNameStartX - NameStartX - 20;
+	g_state.widgetY = RowStartY + 10;
+
+	sprintf(RowEntry, "%s", HintDef->HintName.c_str());
+
+	if (imguiButton(RowEntry, true))
+	{
+		ResetProfileMenus();
+		SetCurrentlyModifiedString(&HintDef->HintName);
+
+		return true;
+	}
+
+	g_state.widgetX = TechNameStartX;
+	g_state.widgetW = DeleteStartX - TechNameStartX - 20;
+	g_state.widgetY = RowStartY + 10;
+
+	sprintf(RowEntry, "%s", HintDef->TechnicalName.c_str());
+
+	if (imguiButton(RowEntry, true))
+	{
+		ResetProfileMenus();
+		SetCurrentlyModifiedString(&HintDef->TechnicalName);
+
+		return true;
+	}
+
+	g_state.widgetX = DeleteStartX;
+	g_state.widgetW = 100;
+	g_state.widgetY = RowStartY + 10;
+
+	if (imguiButton("Delete", true))
+	{
+		ResetProfileMenus();
+		RemoveHintType(HintIndex);
+		return true;
+	}
+
+	g_state.widgetX = endWidgetX;
+	g_state.widgetY = endWidgetY;
+	g_state.widgetW = endWidgetW;
+	g_state.widgetY -= ROW_HEIGHT;
+
+	return false;
+}
+
 bool addNavMeshRow(const int MeshIndex)
 {
 	NavMeshDefinition* MeshDef = GetMeshAtIndex(MeshIndex);

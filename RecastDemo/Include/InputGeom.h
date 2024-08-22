@@ -25,10 +25,19 @@
 static const int MAX_CONVEXVOL_PTS = 12;
 struct ConvexVolume
 {
+	unsigned int NavMeshIndex = 0;
 	float verts[MAX_CONVEXVOL_PTS*3];
 	float hmin, hmax;
 	int nverts;
 	int area;
+};
+
+struct NavHint
+{
+	unsigned int NavMeshIndex = 0;
+	unsigned int id = 0;
+	unsigned int hintType = 0;
+	float position[3] = { 0.0f, 0.0f, 0.0f };
 };
 
 struct BuildSettings
@@ -96,6 +105,10 @@ class InputGeom
 	ConvexVolume m_volumes[MAX_VOLUMES];
 	int m_volumeCount;
 	///@}
+
+	static const int MAX_NAV_HINTS = 1024;
+	NavHint NavHints[MAX_NAV_HINTS];
+	int m_HintCount;
 	
 	bool loadMesh(class rcContext* ctx, const std::string& filepath);
 	bool loadBSP(class rcContext* ctx, const std::string& filepath);
@@ -140,11 +153,18 @@ public:
 	///@{
 	int getConvexVolumeCount() const { return m_volumeCount; }
 	const ConvexVolume* getConvexVolumes() const { return m_volumes; }
-	void addConvexVolume(const float* verts, const int nverts,
+	void addConvexVolume(const unsigned int NavMeshIndex, const float* verts, const int nverts,
 						 const float minh, const float maxh, unsigned char area);
 	void deleteConvexVolume(int i);
-	void drawConvexVolumes(struct duDebugDraw* dd, bool hilight = false);
+	void drawConvexVolumes(const unsigned int NavMeshIndex, struct duDebugDraw* dd, bool hilight = false);
 	///@}
+
+	int getNavHintCount() const { return m_HintCount; }
+	void addNavHint(unsigned int NavMeshIndex, const float* pos, unsigned int types);
+	void removeNavHint(int id);
+	int getMaxNavHints() { return MAX_NAV_HINTS; }
+	NavHint* getNavHints() { return &NavHints[0]; }
+	NavHint* getNavHint(int index);
 
 	void SetTriangleArea(int TriNum, const int NewAreaType);
 	void SetModelArea(int ModelNum, const int NewAreaType);

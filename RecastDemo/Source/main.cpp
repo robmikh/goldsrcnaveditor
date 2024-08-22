@@ -545,6 +545,7 @@ int main(int /*argc*/, char** /*argv*/)
 			static bool bShowProfileConnections = false;
 			static bool bShowProfileProfiles = false;
 			static bool bShowNavMeshProfiles = false;
+			static bool bShowNavHints = false;
 
 			static int profileScroll = 0;
 			static int areaScroll = 0;
@@ -638,6 +639,7 @@ int main(int /*argc*/, char** /*argv*/)
 					bShowProfileConnections = false;
 					bShowProfileProfiles = false;
 					bShowNavMeshProfiles = false;
+					bShowNavHints = false;
 				}
 
 				if (imguiCheck("Areas", bShowProfileAreas, true))
@@ -648,6 +650,7 @@ int main(int /*argc*/, char** /*argv*/)
 					bShowProfileConnections = false;
 					bShowProfileProfiles = false;
 					bShowNavMeshProfiles = false;
+					bShowNavHints = false;
 				}
 
 				if (imguiCheck("Off-Mesh Connection Types", bShowProfileConnections, true))
@@ -658,6 +661,7 @@ int main(int /*argc*/, char** /*argv*/)
 					bShowProfileConnections = true;
 					bShowProfileProfiles = false;
 					bShowNavMeshProfiles = false;
+					bShowNavHints = false;
 				}
 
 				if (imguiCheck("Nav Meshes", bShowNavMeshProfiles, true))
@@ -668,6 +672,7 @@ int main(int /*argc*/, char** /*argv*/)
 					bShowProfileConnections = false;
 					bShowProfileProfiles = false;
 					bShowNavMeshProfiles = true;
+					bShowNavHints = false;
 				}
 
 				if (imguiCheck("Movement Profiles", bShowProfileProfiles, true))
@@ -678,6 +683,18 @@ int main(int /*argc*/, char** /*argv*/)
 					bShowProfileConnections = false;
 					bShowProfileProfiles = true;
 					bShowNavMeshProfiles = false;
+					bShowNavHints = false;
+				}
+
+				if (imguiCheck("Nav Hints", bShowNavHints, true))
+				{
+					ResetProfileMenus();
+					bShowProfileFlags = false;
+					bShowProfileAreas = false;
+					bShowProfileConnections = false;
+					bShowProfileProfiles = false;
+					bShowNavMeshProfiles = false;
+					bShowNavHints = true;
 				}
 
 				if (imguiButton("Save Changes"))
@@ -820,8 +837,29 @@ int main(int /*argc*/, char** /*argv*/)
 						mouseOverMenu = true;
 
 					showNavProfileDetails(GetProfileModifier());
+				}
+				else if (bShowNavHints)
+				{
+					sprintf(ScrollAreaName, "Nav Hint Definitions");
 
+					if (imguiBeginScrollArea(ScrollAreaName, 270, 10, width - 270 - 20, height - 230, &areaScroll, false))
+						mouseOverMenu = true;
 
+					int HintIndex = 0;
+
+					for (auto connIt = CurrentNavProfile->NavHints.begin(); connIt != CurrentNavProfile->NavHints.end(); connIt++)
+					{
+						if (addNavHintRow(HintIndex)) { break; }
+						HintIndex++;
+					}
+
+					imguiSeparator();
+
+					if (imguiButton("Add New Hint Type"))
+					{
+						ResetProfileMenus();
+						CreateNewNavHintType();
+					}
 				}
 
 				imguiEndScrollArea();

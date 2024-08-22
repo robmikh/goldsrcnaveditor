@@ -44,6 +44,7 @@
 #include "OffMeshConnectionTool.h"
 #include "ConvexVolumeTool.h"
 #include "CrowdTool.h"
+#include "NavHintTool.h"
 #include "RecastAlloc.h"
 #include "RecastAssert.h"
 #include "fastlz.h"
@@ -287,10 +288,11 @@ struct RasterizationContext
 };
 
 int Sample_TempObstacles::rasterizeTileLayers(
-							   const int tx, const int ty,
-							   const rcConfig& cfg,
-							   TileCacheData* tiles,
-							   const int maxTiles)
+								const unsigned int NavMeshIndex,
+								const int tx, const int ty,
+								const rcConfig& cfg,
+								TileCacheData* tiles,
+								const int maxTiles)
 {
 	if (!m_geom || !m_geom->getMesh() || !m_geom->getChunkyMesh())
 	{
@@ -406,6 +408,8 @@ int Sample_TempObstacles::rasterizeTileLayers(
 	const ConvexVolume* vols = m_geom->getConvexVolumes();
 	for (int i  = 0; i < m_geom->getConvexVolumeCount(); ++i)
 	{
+		if (vols[i].NavMeshIndex != NavMeshIndex) { continue; }
+
 		rcMarkConvexPolyArea(m_ctx, vols[i].verts, vols[i].nverts,
 							 vols[i].hmin, vols[i].hmax,
 							 (unsigned char)vols[i].area, *rc.chf);
@@ -979,9 +983,9 @@ void Sample_TempObstacles::handleTools()
 	{
 		setTool(new ConvexVolumeTool);
 	}
-	if (imguiCheck("Create Crowds", type == TOOL_CROWD))
+	if (imguiCheck("Place Nav Hints", type == TOOL_NAV_HINTS))
 	{
-		setTool(new CrowdTool);
+		setTool(new NavHintTool);
 	}
 	
 	imguiSeparatorLine();
@@ -1113,7 +1117,7 @@ void Sample_TempObstacles::handleRender()
 	
 	glDepthMask(GL_TRUE);
 		
-	m_geom->drawConvexVolumes(&m_dd);
+	m_geom->drawConvexVolumes(m_SelectedNavMeshIndex, &m_dd);
 	
 	if (m_tool)
 		m_tool->handleRender();
@@ -1240,7 +1244,7 @@ bool Sample_TempObstacles::handleBuild()
 	int navmeshMemUsage = 0;
 
 	vector<NavMeshDefinition> AllNavMeshes = GetAllMeshDefinitions();
-	int MeshIndex = 0;
+	unsigned int MeshIndex = 0;
 
 	for (auto it = AllNavMeshes.begin(); it != AllNavMeshes.end(); it++)
 	{
@@ -1367,7 +1371,7 @@ bool Sample_TempObstacles::handleBuild()
 			{
 				TileCacheData tiles[MAX_LAYERS];
 				memset(tiles, 0, sizeof(tiles));
-				int ntiles = rasterizeTileLayers(x, y, cfg, tiles, MAX_LAYERS);
+				int ntiles = rasterizeTileLayers(MeshIndex, x, y, cfg, tiles, MAX_LAYERS);
 
 				for (int i = 0; i < ntiles; ++i)
 				{
@@ -1473,12 +1477,8 @@ struct TileCacheSetHeader
 	dtTileCacheParams cacheParams;
 
 	int NumOffMeshCons = 0;
-
 	int NumConvexVols = 0;
-	int ConvexVolOffset = 0;
-
 	int NumNavHints = 0;
-	int NavHintOffset = 0;
 };
 
 struct TileCacheExportHeader
@@ -1556,6 +1556,24 @@ void Sample_TempObstacles::SaveData(const char* path)
 			tcHeader.NumOffMeshCons++;
 		}
 
+		const ConvexVolume* vols = m_geom->getConvexVolumes();
+
+		for (int ii = 0; ii < m_geom->getConvexVolumeCount(); ii++)
+		{
+			if (vols[i].NavMeshIndex != i) { continue; }
+
+			tcHeader.NumConvexVols++;
+		}
+
+		const NavHint* hints = m_geom->getNavHints();
+
+		for (int ii = 0; ii < m_geom->getNavHintCount(); ii++)
+		{
+			if (hints[i].NavMeshIndex != i) { continue; }
+
+			tcHeader.NumNavHints++;
+		}
+
 		for (int ii = 0; ii < m_NavMeshArray[i].m_tileCache->getTileCount(); ++ii)
 		{
 			const dtCompressedTile* tile = m_NavMeshArray[i].m_tileCache->getTile(ii);
@@ -1590,6 +1608,20 @@ void Sample_TempObstacles::SaveData(const char* path)
 			if (con->state == DT_OFFMESH_EMPTY || con->state == DT_OFFMESH_REMOVING) { continue; }
 
 			fwrite(con, sizeof(dtOffMeshConnection), 1, fp);
+		}
+
+		for (int ii = 0; ii < m_geom->getConvexVolumeCount(); ii++)
+		{
+			if (vols[i].NavMeshIndex != i) { continue; }
+
+			fwrite(&vols[i], sizeof(ConvexVolume), 1, fp);
+		}
+
+		for (int ii = 0; ii < m_geom->getNavHintCount(); ii++)
+		{
+			if (hints[i].NavMeshIndex != i) { continue; }
+
+			fwrite(&hints[i], sizeof(NavHint), 1, fp);
 		}
 	}
 
@@ -1714,8 +1746,25 @@ void Sample_TempObstacles::loadAll(const char* path)
 			m_NavMeshArray[i].m_tileCache->addOffMeshConnection(&def.pos[0], &def.pos[3], 10.0f, def.area, def.flags, def.bBiDir, 0);
 		}
 
-	}		
-	
+		for (int ii = 0; ii < tcHeader.NumConvexVols; ii++)
+		{
+			ConvexVolume def;
+
+			fread(&def, sizeof(ConvexVolume), 1, fp);
+
+			m_geom->addConvexVolume(i, def.verts, def.nverts, def.hmin, def.hmax, def.area);
+		}
+
+		for (int ii = 0; ii < tcHeader.NumNavHints; ii++)
+		{
+			NavHint def;
+
+			fread(&def, sizeof(NavHint), 1, fp);
+
+			m_geom->addNavHint(i, def.position, def.hintType);
+		}
+
+	}	
 	
 	fclose(fp);
 }
@@ -1731,6 +1780,8 @@ void Sample_TempObstacles::addOffMeshConnection(const float* spos, const float* 
 void Sample_TempObstacles::drawOffMeshConnections(duDebugDraw* dd)
 {
 	dtTileCache* CurrentTileCache = getTileCache();
+
+	if (!CurrentTileCache) { return; }
 
 	unsigned int conColor = duRGBA(192, 0, 128, 192);
 	unsigned int baseColor = duRGBA(0, 0, 0, 64);

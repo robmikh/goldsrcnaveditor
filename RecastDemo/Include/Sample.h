@@ -37,6 +37,7 @@ enum SampleToolType
 	TOOL_CONVEX_VOLUME,
 	TOOL_CROWD,
 	TOOL_MESH_EDITOR,
+	TOOL_NAV_HINTS,
 	MAX_TOOLS
 };
 
@@ -115,7 +116,7 @@ protected:
 
 	unsigned char m_navMeshDrawFlags;
 
-	int m_SelectedNavMeshIndex;
+	unsigned int m_SelectedNavMeshIndex;
 
 	struct NavMeshEntry m_NavMeshArray[8];
 
@@ -185,6 +186,7 @@ public:
 	virtual float getAgentRadius() { return m_agentRadius; }
 	virtual float getAgentHeight() { return m_agentHeight; }
 	virtual float getAgentClimb() { return m_agentMaxClimb; }
+	unsigned int getCurrentNavMeshIndex() { return m_SelectedNavMeshIndex; }
 	
 	unsigned char getNavMeshDrawFlags() const { return m_navMeshDrawFlags; }
 	void setNavMeshDrawFlags(unsigned char flags) { m_navMeshDrawFlags = flags; }

@@ -165,9 +165,12 @@ void ConvexVolumeTool::handleClick(const float* /*s*/, const float* p, bool shif
 		// Delete
 		int nearestIndex = -1;
 		const ConvexVolume* vols = geom->getConvexVolumes();
+
+		unsigned int CurrentNavMeshIndex = m_sample->getCurrentNavMeshIndex();
+
 		for (int i = 0; i < geom->getConvexVolumeCount(); ++i)
 		{
-			if (pointInPoly(vols[i].nverts, vols[i].verts, p) &&
+			if (vols[i].NavMeshIndex == CurrentNavMeshIndex && pointInPoly(vols[i].nverts, vols[i].verts, p) &&
 							p[1] >= vols[i].hmin && p[1] <= vols[i].hmax)
 			{
 				nearestIndex = i;
@@ -199,16 +202,19 @@ void ConvexVolumeTool::handleClick(const float* /*s*/, const float* p, bool shif
 				minh -= m_boxDescent;
 				maxh = minh + m_boxHeight;
 
+				unsigned int CurrentNavMeshIndex = m_sample->getCurrentNavMeshIndex();
+
 				if (m_polyOffset > 0.01f)
 				{
 					float offset[MAX_PTS*2*3];
 					int noffset = rcOffsetPoly(verts, m_nhull, m_polyOffset, offset, MAX_PTS*2);
 					if (noffset > 0)
-						geom->addConvexVolume(offset, noffset, minh, maxh, (unsigned char)m_areaType);
+						geom->addConvexVolume(CurrentNavMeshIndex, offset, noffset, minh, maxh, (unsigned char)m_areaType);
 				}
 				else
 				{
-					geom->addConvexVolume(verts, m_nhull, minh, maxh, (unsigned char)m_areaType);
+					
+					geom->addConvexVolume(CurrentNavMeshIndex, verts, m_nhull, minh, maxh, (unsigned char)m_areaType);
 				}
 			}
 			

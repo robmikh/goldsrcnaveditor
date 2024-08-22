@@ -352,7 +352,7 @@ void Sample_SoloMesh::handleRender()
 		glDepthMask(GL_TRUE);
 	}
 	
-	m_geom->drawConvexVolumes(&m_dd);
+	m_geom->drawConvexVolumes(m_SelectedNavMeshIndex, &m_dd);
 
 	if (m_tool)
 		m_tool->handleRender();

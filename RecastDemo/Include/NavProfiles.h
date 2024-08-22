@@ -70,6 +70,16 @@ typedef struct _AGENT_PROFILE
 
 } NavAgentProfile;
 
+typedef struct _NAV_HINT_DEFINITION
+{
+	string HintName = "New Profile";
+	string TechnicalName = "NAV_HINT_CUSTOM";
+
+	unsigned int HintIndex = 0;
+	unsigned int HintId = 0;
+
+} NavHintDefinition;
+
 typedef struct _GAME_PROFILE
 {
 	string GameName = "Game";
@@ -78,6 +88,7 @@ typedef struct _GAME_PROFILE
 	vector<NavFlagDefinition> FlagDefinitions;
 	vector<NavOffMeshConnectionDefinition> ConnectionDefinitions;
 	vector<NavAgentProfile> ProfileDefinitions;
+	vector<NavHintDefinition> NavHints;
 
 	vector<NavMeshDefinition> MeshDefinitions;
 
@@ -91,6 +102,7 @@ vector<NavFlagDefinition> GetAllNavFlagDefinitions();
 vector<NavOffMeshConnectionDefinition> GetAllConnectionDefinitions();
 vector<NavMeshDefinition> GetAllMeshDefinitions();
 vector<NavAgentProfile> GetAllAgentProfileDefinitions();
+vector<NavHintDefinition> GetAllNavHintDefinitions();
 
 unsigned int GetCurrentGameProfileIndex();
 void SetCurrentGameProfileIndex(unsigned int NewIndex);
@@ -102,6 +114,7 @@ NavFlagDefinition* CreateNewMovementFlag();
 NavOffMeshConnectionDefinition* CreateConnectionType();
 NavMeshDefinition* CreateNewNavMesh();
 NavAgentProfile* CreateNewAgentProfile();
+NavHintDefinition* CreateNewNavHintType();
 
 NavAreaDefinition* GetAreaAtIndex(unsigned int Index);
 NavAreaDefinition* GetNavAreaById(unsigned short Id);
@@ -109,6 +122,7 @@ NavFlagDefinition* GetFlagAtIndex(unsigned int Index);
 NavFlagDefinition* GetFlagByFlagId(unsigned int Id);
 NavOffMeshConnectionDefinition* GetConnectionAtIndex(unsigned int Index);
 NavMeshDefinition* GetMeshAtIndex(unsigned int Index);
+NavHintDefinition* GetNavHintAtIndex(unsigned int Index);
 NavAgentProfile* GetAgentProfileAtIndex(unsigned int Index);
 
 int GetNumNavMeshes();
@@ -119,6 +133,7 @@ NavGameProfile* GetCurrentGameProfile();
 
 int GetIndexForNewArea();
 int GetIndexForNewFlag();
+int GetIndexForNewNavHint();
 int GetIndexForNewConnectionType();
 
 bool CanRemoveMovementArea(unsigned int RemoveIndex);
@@ -128,6 +143,7 @@ bool CanRemoveConnectionType(unsigned int RemoveIndex);
 void RemoveMovementFlag(unsigned int RemoveIndex);
 void RemoveMovementArea(unsigned int RemoveIndex);
 void RemoveConnectionType(unsigned int RemoveIndex);
+void RemoveHintType(unsigned int RemoveIndex);
 void RemoveMeshDefinition(unsigned int RemoveIndex);
 void RemoveAgentProfile(unsigned int RemoveIndex);
 

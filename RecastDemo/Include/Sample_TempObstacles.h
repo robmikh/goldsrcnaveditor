@@ -98,7 +98,7 @@ private:
 	Sample_TempObstacles(const Sample_TempObstacles&);
 	Sample_TempObstacles& operator=(const Sample_TempObstacles&);
 
-	int rasterizeTileLayers(const int tx, const int ty, const rcConfig& cfg, struct TileCacheData* tiles, const int maxTiles);
+	int rasterizeTileLayers(const unsigned int NavMeshIndex, const int tx, const int ty, const rcConfig& cfg, struct TileCacheData* tiles, const int maxTiles);
 };
 
 

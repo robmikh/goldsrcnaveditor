@@ -111,8 +111,10 @@ InputGeom::InputGeom() :
 	m_mesh(0),
 	m_hasBuildSettings(false),
 	m_offMeshConCount(0),
-	m_volumeCount(0)
+	m_volumeCount(0),
+	m_HintCount(0)
 {
+	memset(&NavHints, 0, sizeof(NavHints));
 }
 
 InputGeom::~InputGeom()
@@ -132,6 +134,7 @@ bool InputGeom::loadMesh(rcContext* ctx, const std::string& filepath)
 	}
 	m_offMeshConCount = 0;
 	m_volumeCount = 0;
+	m_HintCount = 0;
 	
 	m_mesh = new rcMeshLoaderObj;
 	if (!m_mesh)
@@ -173,6 +176,7 @@ bool InputGeom::loadBSP(rcContext* ctx, const std::string& filepath)
 	}
 	m_offMeshConCount = 0;
 	m_volumeCount = 0;
+	m_HintCount = 0;
 
 	m_mesh = new rcMeshLoaderObj;
 	if (!m_mesh)
@@ -244,6 +248,7 @@ bool InputGeom::loadGeomSet(rcContext* ctx, const std::string& filepath)
 	
 	m_offMeshConCount = 0;
 	m_volumeCount = 0;
+	m_HintCount = 0;
 	delete m_mesh;
 	m_mesh = 0;
 
@@ -580,17 +585,29 @@ void InputGeom::drawOffMeshConnections(duDebugDraw* dd, bool hilight)
 	dd->depthMask(true);
 }
 
-void InputGeom::addConvexVolume(const float* verts, const int nverts,
+void InputGeom::addConvexVolume(const unsigned int NavMeshIndex, const float* verts, const int nverts,
 								const float minh, const float maxh, unsigned char area)
 {
 	if (m_volumeCount >= MAX_VOLUMES) return;
 	ConvexVolume* vol = &m_volumes[m_volumeCount++];
 	memset(vol, 0, sizeof(ConvexVolume));
+	vol->NavMeshIndex = NavMeshIndex;
 	memcpy(vol->verts, verts, sizeof(float)*3*nverts);
 	vol->hmin = minh;
 	vol->hmax = maxh;
 	vol->nverts = nverts;
 	vol->area = area;
+}
+
+void InputGeom::addNavHint(unsigned int NavMeshIndex, const float* pos, unsigned int types)
+{
+	if (m_HintCount >= MAX_NAV_HINTS) return;
+	NavHint* hint = &NavHints[m_HintCount++];
+	memset(hint, 0, sizeof(NavHint));
+	hint->NavMeshIndex = NavMeshIndex;
+	memcpy(hint->position, pos, sizeof(float) * 3);
+	hint->id = m_HintCount - 1;
+	hint->hintType = types;
 }
 
 void InputGeom::deleteConvexVolume(int i)
@@ -599,7 +616,13 @@ void InputGeom::deleteConvexVolume(int i)
 	m_volumes[i] = m_volumes[m_volumeCount];
 }
 
-void InputGeom::drawConvexVolumes(struct duDebugDraw* dd, bool /*hilight*/)
+void InputGeom::removeNavHint(int id)
+{
+	m_HintCount--;
+	NavHints[id] = NavHints[m_HintCount];
+}
+
+void InputGeom::drawConvexVolumes(const unsigned int NavMeshIndex, struct duDebugDraw* dd, bool /*hilight*/)
 {
 	dd->depthMask(false);
 
@@ -608,6 +631,8 @@ void InputGeom::drawConvexVolumes(struct duDebugDraw* dd, bool /*hilight*/)
 	for (int i = 0; i < m_volumeCount; ++i)
 	{
 		const ConvexVolume* vol = &m_volumes[i];
+
+		if (vol->NavMeshIndex != NavMeshIndex) { continue; }
 
 		unsigned int col = duTransCol(dd->areaToCol(vol->area), 32);
 		for (int j = 0, k = vol->nverts-1; j < vol->nverts; k = j++)
@@ -635,6 +660,9 @@ void InputGeom::drawConvexVolumes(struct duDebugDraw* dd, bool /*hilight*/)
 	for (int i = 0; i < m_volumeCount; ++i)
 	{
 		const ConvexVolume* vol = &m_volumes[i];
+
+		if (vol->NavMeshIndex != NavMeshIndex) { continue; }
+
 		unsigned int col = duTransCol(dd->areaToCol(vol->area), 220);
 		for (int j = 0, k = vol->nverts-1; j < vol->nverts; k = j++)
 		{
@@ -654,6 +682,9 @@ void InputGeom::drawConvexVolumes(struct duDebugDraw* dd, bool /*hilight*/)
 	for (int i = 0; i < m_volumeCount; ++i)
 	{
 		const ConvexVolume* vol = &m_volumes[i];
+
+		if (vol->NavMeshIndex != NavMeshIndex) { continue; }
+
 		unsigned int col = duDarkenCol(duTransCol(dd->areaToCol(vol->area), 220));
 		for (int j = 0; j < vol->nverts; ++j)
 		{
@@ -723,4 +754,14 @@ bool InputGeom::intersectSegmentTriangle(const float* sp, const float* sq,
 	t /= d;
 
 	return true;
+}
+
+NavHint* InputGeom::getNavHint(int index)
+{
+	if (index >= MAX_NAV_HINTS)
+	{
+		return nullptr;
+	}
+
+	return &NavHints[index];
 }
