@@ -80,6 +80,7 @@ class NavMeshTesterTool : public SampleTool
 	float m_distanceToWall;
 	float m_neighbourhoodRadius;
 	float m_randomRadius;
+	bool m_randomReachableOnly;
 	bool m_sposSet;
 	bool m_eposSet;
 

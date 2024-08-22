@@ -474,6 +474,11 @@ public:
 	dtStatus findRandomPointAroundCircle(dtPolyRef startRef, const float* centerPos, const float maxRadius,
 										 const dtQueryFilter* filter, float (*frand)(),
 										 dtPolyRef* randomRef, float* randomPt) const;
+
+	// Same as findRandomPointAroundCircle but ignores whether the point is reachable from startRef or not.
+	dtStatus findRandomPointAroundCircleIgnoreReachability(dtPolyRef startRef, const float* centerPos, const float maxRadius,
+		const dtQueryFilter* filter, float (*frand)(),
+		dtPolyRef* randomRef, float* randomPt) const;
 	
 	/// Finds the closest point on the specified polygon.
 	///  @param[in]		ref			The reference id of the polygon.

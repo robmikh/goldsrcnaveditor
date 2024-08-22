@@ -497,6 +497,125 @@ dtStatus dtNavMeshQuery::findRandomPointAroundCircle(dtPolyRef startRef, const f
 	return status;
 }
 
+dtStatus dtNavMeshQuery::findRandomPointAroundCircleIgnoreReachability(dtPolyRef startRef, const float* centerPos, const float maxRadius,
+	const dtQueryFilter* filter, float (*frand)(),
+	dtPolyRef* randomRef, float* randomPt) const
+{
+	dtAssert(m_nav);
+
+	const dtMeshTile* startTile = 0;
+	const dtPoly* startPoly = 0;
+	m_nav->getTileAndPolyByRefUnsafe(startRef, &startTile, &startPoly);
+
+	int layer = startTile->header->layer;
+
+	float tileWidth = startTile->header->bmax[0] - startTile->header->bmin[0];
+	float tileHeight = startTile->header->bmax[2] - startTile->header->bmin[2];
+
+	//int TileIndices[1024];
+	//int NumEligibleTiles = 0;
+
+	int SearchXRadius = (int)dtMathCeilf(maxRadius / tileWidth);
+	int SearchYRadius = (int)dtMathCeilf(maxRadius / tileHeight);
+
+	int StartTileX = startTile->header->x - SearchXRadius;
+	int StartTileY = startTile->header->y - SearchYRadius;
+
+	const dtMeshTile* tile = 0;
+	float tsum = 0.0f;
+
+	for (int tileX = 0; tileX < SearchXRadius * 2; tileX++)
+	{
+		for (int tileY = 0; tileY < SearchYRadius * 2; tileY++)
+		{
+			int thisTileXIndex = StartTileX + tileX;
+			int thisTileYIndex = StartTileY + tileY;
+
+			const dtMeshTile* t = m_nav->getTileAt(thisTileXIndex, thisTileYIndex, layer);
+
+			if (!t || !t->header) continue;
+
+			// Choose random tile using reservoi sampling.
+			const float area = 1.0f; // Could be tile area too.
+			tsum += area;
+			const float u = frand();
+			if (u * tsum <= area)
+				tile = t;
+		}
+	}
+
+	if (!tile)
+		return DT_FAILURE;
+
+	// Randomly pick one polygon weighted by polygon area.
+	const dtPoly* poly = 0;
+	dtPolyRef polyRef = 0;
+	const dtPolyRef base = m_nav->getPolyRefBase(tile);
+
+	float areaSum = 0.0f;
+	for (int i = 0; i < tile->header->polyCount; ++i)
+	{
+		const dtPoly* p = &tile->polys[i];
+		// Do not return off-mesh connection polygons.
+		if (p->getType() != DT_POLYTYPE_GROUND)
+			continue;
+		// Must pass filter
+		const dtPolyRef ref = base | (dtPolyRef)i;
+		if (!filter->passFilter(ref, tile, p))
+			continue;
+
+		// Calc area of the polygon.
+		float polyArea = 0.0f;
+		for (int j = 2; j < p->vertCount; ++j)
+		{
+			const float* va = &tile->verts[p->verts[0] * 3];
+			const float* vb = &tile->verts[p->verts[j - 1] * 3];
+			const float* vc = &tile->verts[p->verts[j] * 3];
+			polyArea += dtTriArea2D(va, vb, vc);
+		}
+
+		// Choose random polygon weighted by area, using reservoi sampling.
+		areaSum += polyArea;
+		const float u = frand();
+		if (u * areaSum <= polyArea)
+		{
+			poly = p;
+			polyRef = ref;
+		}
+	}
+
+	if (!poly)
+		return DT_FAILURE;
+
+	// Randomly pick point on polygon.
+	const float* v = &tile->verts[poly->verts[0] * 3];
+	float verts[3 * DT_VERTS_PER_POLYGON];
+	float areas[DT_VERTS_PER_POLYGON];
+	dtVcopy(&verts[0 * 3], v);
+	for (int j = 1; j < poly->vertCount; ++j)
+	{
+		v = &tile->verts[poly->verts[j] * 3];
+		dtVcopy(&verts[j * 3], v);
+	}
+
+	const float s = frand();
+	const float t = frand();
+
+	float pt[3];
+	dtRandomPointInConvexPoly(verts, poly->vertCount, areas, s, t, pt);
+
+	float h = 0.0f;
+	dtStatus status = getPolyHeight(polyRef, pt, &h);
+	if (dtStatusFailed(status))
+		return status;
+	pt[1] = h;
+
+	dtVcopy(randomPt, pt);
+	*randomRef = polyRef;
+
+	return DT_SUCCESS;
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
