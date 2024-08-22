@@ -213,15 +213,42 @@ void NavMeshTesterTool::init(Sample* sample)
 
 	if (m_navQuery)
 	{
-		// Change costs.
-		m_filter.setAreaCost(SAMPLE_POLYAREA_GROUND, 1.0f);
-		m_filter.setAreaCost(1, 1.0f);
-		m_filter.setAreaCost(2, 3.0f);
-		m_filter.setAreaCost(3, 10.0f);
-		m_filter.setAreaCost(SAMPLE_POLYAREA_GRASS, 2.0f);
-		m_filter.setAreaCost(SAMPLE_POLYAREA_JUMP, 1.5f);
+		bool bInitialised = false;
 
-		m_filter.setExcludeFlags(1 << 15);
+		if (GetNumAgentProfiles() > 0)
+		{
+			if (m_ProfileIndex > (unsigned int)GetNumAgentProfiles() - 1)
+			{
+				m_ProfileIndex = 0;
+			}
+
+			NavAgentProfile* SelectedProfile = GetAgentProfileAtIndex(m_ProfileIndex);
+
+			if (SelectedProfile)
+			{
+				m_filter.setIncludeFlags(SelectedProfile->MovementFlags);
+				m_filter.setExcludeFlags(1 << 31);
+
+				vector<NavAreaDefinition> AllAreas = GetAllNavAreaDefinitions();
+
+				for (auto areaIt = AllAreas.begin(); areaIt != AllAreas.end(); areaIt++)
+				{
+					m_filter.setAreaCost(areaIt->AreaId, SelectedProfile->AreaCosts[areaIt->AreaId]);
+				}
+
+				bInitialised = true;
+			}
+
+		}		
+
+		if (!bInitialised)
+		{
+			m_filter.setAreaCost(1, 1.0f);
+			m_filter.setAreaCost(2, 3.0f);
+			m_filter.setAreaCost(3, 10.0f);
+
+			m_filter.setExcludeFlags(1 << 31);
+		}
 	}
 
 	m_neighbourhoodRadius = sample->getAgentRadius() * 20.0f;

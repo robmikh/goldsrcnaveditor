@@ -126,6 +126,7 @@ NavHintDefinition* GetNavHintAtIndex(unsigned int Index);
 NavAgentProfile* GetAgentProfileAtIndex(unsigned int Index);
 
 int GetNumNavMeshes();
+int GetNumAgentProfiles();
 
 void DeleteGameProfile(unsigned int ProfileIndex);
 
@@ -172,7 +173,9 @@ unsigned int* GetFlagColorModifier();
 void ResetProfileMenus();
 
 void OutputProfileConfig(NavGameProfile* Profile);
+void OutputIncludeHeader(NavGameProfile* Profile);
 
 void LoadProfileConfig(std::string ProfileName);
+
 
 #endif // NAV_PROFILES_H

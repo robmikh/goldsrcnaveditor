@@ -619,7 +619,7 @@ int main(int /*argc*/, char** /*argv*/)
 
 				sprintf(PanelTitle, "Game Profile: %s", CurrentNavProfile->GameName.c_str());
 
-				if (imguiBeginScrollArea(PanelTitle, 270, height - 210, width - 270 - 20, 200, &profileScroll))
+				if (imguiBeginScrollArea(PanelTitle, 270, height - 300, width - 270 - 20, 290, &profileScroll))
 					mouseOverMenu = true;
 
 				imguiSeparator();
@@ -707,11 +707,24 @@ int main(int /*argc*/, char** /*argv*/)
 					}
 				}
 
+				if (imguiButton("Export Headers"))
+				{
+					NavGameProfile* CurrentProfile = GetCurrentGameProfile();
+
+					if (CurrentProfile)
+					{
+						OutputIncludeHeader(CurrentProfile);
+					}
+				}
+
 				imguiSeparator();
 
 				imguiEndScrollArea();
 
 				char ScrollAreaName[128];
+
+				int mainPanelStartY = 10;
+				int mainPanelHeight = height - 310;
 
 				if (bShowProfileFlags)
 				{
@@ -719,7 +732,7 @@ int main(int /*argc*/, char** /*argv*/)
 
 					// 0,0 is bottom left of screen (centre would be width / 2, height / 2
 					// Rectangle starts in the bottom left, and the width and height "drag it out" upwards and to the right
-					if (imguiBeginScrollArea(ScrollAreaName, 270, 10, width - 270 - 20, height - 230, &flagScroll, false))
+					if (imguiBeginScrollArea(ScrollAreaName, 270, mainPanelStartY, width - 270 - 20, mainPanelHeight, &flagScroll, false))
 						mouseOverMenu = true;
 
 					int areaIndex = 0;
@@ -742,7 +755,7 @@ int main(int /*argc*/, char** /*argv*/)
 				{
 					sprintf(ScrollAreaName, "Movement Area Definitions");
 
-					if (imguiBeginScrollArea(ScrollAreaName, 270, 10, width - 270 - 20, height - 230, &areaScroll, false))
+					if (imguiBeginScrollArea(ScrollAreaName, 270, mainPanelStartY, width - 270 - 20, mainPanelHeight, &areaScroll, false))
 						mouseOverMenu = true;
 
 					int areaIndex = 0;
@@ -765,7 +778,7 @@ int main(int /*argc*/, char** /*argv*/)
 				{
 					sprintf(ScrollAreaName, "Off-Mesh Connection Type Definitions");
 
-					if (imguiBeginScrollArea(ScrollAreaName, 270, 10, width - 270 - 20, height - 230, &areaScroll, false))
+					if (imguiBeginScrollArea(ScrollAreaName, 270, mainPanelStartY, width - 270 - 20, mainPanelHeight, &areaScroll, false))
 						mouseOverMenu = true;
 
 					int connIndex = 0;
@@ -788,7 +801,7 @@ int main(int /*argc*/, char** /*argv*/)
 				{
 					sprintf(ScrollAreaName, "Nav Mesh Definitions");
 
-					if (imguiBeginScrollArea(ScrollAreaName, 270, 10, width - 270 - 20, height - 230, &areaScroll, false))
+					if (imguiBeginScrollArea(ScrollAreaName, 270, mainPanelStartY, width - 270 - 20, mainPanelHeight, &areaScroll, false))
 						mouseOverMenu = true;
 
 					int meshIndex = 0;
@@ -812,7 +825,7 @@ int main(int /*argc*/, char** /*argv*/)
 					int ProfileListWidth = 200;
 					int ProfilePanelWidth = (width - 270 - 20) - ProfileListWidth - 10;
 
-					if (imguiBeginScrollArea("Movement Profiles", 270, 10, ProfileListWidth, height - 230, &areaScroll, false))
+					if (imguiBeginScrollArea("Movement Profiles", 270, mainPanelStartY, ProfileListWidth, mainPanelHeight, &areaScroll, false))
 						mouseOverMenu = true;
 
 					imguiSeparator();
@@ -833,7 +846,7 @@ int main(int /*argc*/, char** /*argv*/)
 
 					imguiEndScrollArea();
 
-					if (imguiBeginScrollArea("Profile Details", 480, 10, ProfilePanelWidth, height - 230, &areaScroll, false))
+					if (imguiBeginScrollArea("Profile Details", 480, mainPanelStartY, ProfilePanelWidth, mainPanelHeight, &areaScroll, false))
 						mouseOverMenu = true;
 
 					showNavProfileDetails(GetProfileModifier());
@@ -842,7 +855,7 @@ int main(int /*argc*/, char** /*argv*/)
 				{
 					sprintf(ScrollAreaName, "Nav Hint Definitions");
 
-					if (imguiBeginScrollArea(ScrollAreaName, 270, 10, width - 270 - 20, height - 230, &areaScroll, false))
+					if (imguiBeginScrollArea(ScrollAreaName, 270, mainPanelStartY, width - 270 - 20, mainPanelHeight, &areaScroll, false))
 						mouseOverMenu = true;
 
 					int HintIndex = 0;

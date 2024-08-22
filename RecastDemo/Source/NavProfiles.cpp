@@ -111,7 +111,7 @@ NavGameProfile* CreateNewGameProfile()
 	NewProfile.AreaDefinitions.push_back(DefaultHazardArea);
 
 	NavFlagDefinition DisabledFlagDef;
-	DisabledFlagDef.NavFlagIndex = 0;
+	DisabledFlagDef.NavFlagIndex = 31;
 	DisabledFlagDef.FlagName = "Disabled";
 	DisabledFlagDef.TechnicalName = "NAV_FLAG_DISABLED";
 	DisabledFlagDef.FlagId = 1 << 31;
@@ -470,6 +470,15 @@ int GetNumNavMeshes()
 	if (!CurrentProfile) { return 0; }
 
 	return CurrentProfile->MeshDefinitions.size();
+}
+
+int GetNumAgentProfiles()
+{
+	NavGameProfile* CurrentProfile = GetCurrentGameProfile();
+
+	if (!CurrentProfile) { return 0; }
+
+	return CurrentProfile->ProfileDefinitions.size();
 }
 
 NavOffMeshConnectionDefinition* GetConnectionAtIndex(unsigned int Index)
@@ -1510,4 +1519,91 @@ void OutputProfileConfig(NavGameProfile* Profile)
 
 	fflush(fp);
 	fclose(fp);
+}
+
+void OutputIncludeHeader(NavGameProfile* Profile)
+{
+	if (!Profile) { return; }
+
+	string HeaderFileName = Profile->FileName;
+
+	if (HeaderFileName.empty())
+	{
+		HeaderFileName = Profile->GameName;
+
+		HeaderFileName.erase(std::remove_if(HeaderFileName.begin(), HeaderFileName.end(),
+			[](auto const& c) -> bool { return !std::isalnum(c); }), HeaderFileName.end());
+	}
+
+	if (HeaderFileName.empty())
+	{
+		HeaderFileName = "profile";
+	}
+	
+	HeaderFileName.append(".h");
+
+	string FileName = "Profiles/" + HeaderFileName;
+
+	FILE* fp = fopen(FileName.c_str(), "w+");
+
+	if (!fp) { return; }
+
+	fprintf(fp, "#pragma once\n\n");
+
+	fprintf(fp, "#ifndef NAV_CONSTANTS_H\n");
+	fprintf(fp, "#define NAV_CONSTANTS_H\n\n");
+
+	fprintf(fp, "// Possible movement types. Defines the actions the bot needs to take to traverse this node\n");
+	fprintf(fp, "enum NavMovementFlag\n");
+	fprintf(fp, "{\n");
+	
+	vector<NavFlagDefinition> AllFlags = GetAllNavFlagDefinitions();
+
+	for (auto it = AllFlags.begin(); it != AllFlags.end(); it++)
+	{
+		fprintf(fp, "\t%s = %u,\t\t// %s\n", it->TechnicalName.c_str(), it->FlagId, it->FlagName.c_str());
+	}
+
+	fprintf(fp, "\tNAV_FLAG_ALL = -1\t\t// All flags\n");
+
+	fprintf(fp, "}\n\n");
+
+	fprintf(fp, "// Area types. Defines the cost of movement through an area and which flag to use\n");
+	fprintf(fp, "enum NavArea\n");
+	fprintf(fp, "{\n");
+
+	vector<NavAreaDefinition> AllAreas = GetAllNavAreaDefinitions();
+
+	for (auto it = AllAreas.begin(); it != AllAreas.end(); it++)
+	{
+		fprintf(fp, "\t%s = %u,\t\t// %s\n", it->TechnicalName.c_str(), it->AreaId, it->AreaName.c_str());
+	}
+
+	fprintf(fp, "}\n\n");
+
+	fprintf(fp, "// Retrieve appropriate flag for area (See process() in the MeshProcess struct)\n");
+	fprintf(fp, "inline NavMovementFlag GetFlagForArea(NavArea Area)\n");
+	fprintf(fp, "{\n");
+	fprintf(fp, "\tswitch(Area)\n");
+	fprintf(fp, "\t{\n");
+
+	for (auto it = AllAreas.begin(); it != AllAreas.end(); it++)
+	{
+		NavFlagDefinition* Flag = GetFlagAtIndex(it->FlagIndex);
+
+		fprintf(fp, "\t\tcase %s:\n", it->TechnicalName.c_str());
+		fprintf(fp, "\t\t\treturn %s;\n", Flag->TechnicalName.c_str());
+	}
+
+	fprintf(fp, "\t\tdefault:\n");
+	fprintf(fp, "\t\t\treturn NAV_FLAG_DISABLED;\n");
+	
+
+	fprintf(fp, "\t}\n");
+	fprintf(fp, "}\n\n");
+
+	fprintf(fp, "#endif // NAV_CONSTANTS_H");
+
+	fclose(fp);
+
 }

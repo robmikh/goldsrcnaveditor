@@ -56,9 +56,9 @@ flags:
 		flag_name: Platform
 		flag_tech_name: NAV_FLAG_PLATFORM
 		is_custom: false
-		R: 255.0
-		G: 32.0
-		B: 255.0
+		R: 109.0
+		G: 41.0
+		B: 176.0
 
 area_count: 4
 areas:
@@ -150,3 +150,5 @@ agent_profiles:
 		area_costs: {0.0,1.0,2.0,10.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0}
 		movement_flags: 63
 
+nav_hint_count: 1
+nav_hints:

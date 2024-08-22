@@ -1851,9 +1851,11 @@ dtOffMeshConnectionRef hitTestOffMeshConnection(const dtTileCache* tc, const flo
 
 void Sample_TempObstacles::removeOffMeshConnection(const float* pos)
 {
-	if (m_tileCache)
+	dtTileCache* CurrentTileCache = getTileCache();
+
+	if (CurrentTileCache)
 	{
-		dtOffMeshConnectionRef ref = hitTestOffMeshConnection(m_tileCache, pos);
-		m_tileCache->removeOffMeshConnection(ref);
+		dtOffMeshConnectionRef ref = hitTestOffMeshConnection(CurrentTileCache, pos);
+		CurrentTileCache->removeOffMeshConnection(ref);
 	}
 }

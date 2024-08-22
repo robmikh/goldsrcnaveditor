@@ -192,7 +192,7 @@ areas:
 		area_name: Blocked By Team 1 Structure
 		area_tech_name: NAV_AREA_BLOCKEDSTRUCTURE1
 		is_custom: true
-		flag_index: 13
+		flag_index: 14
 		R: 59.0
 		G: 0.0
 		B: 0.0
@@ -201,7 +201,7 @@ areas:
 		area_name: Blocked By Team 2 Structure
 		area_tech_name: NAV_AREA_BLOCKEDSTRUCTURE2
 		is_custom: true
-		flag_index: 14
+		flag_index: 15
 		R: 49.0
 		G: 0.0
 		B: 0.0
@@ -326,3 +326,15 @@ agent_profiles:
 		area_costs: {0.0,1.0,1.0,10.0,10.0,10.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0}
 		movement_flags: 2147459327
 
+nav_hint_count: 6
+nav_hints:
+	id: 0
+		hint_index: 0
+		hint_name: Build Comm Chair
+		hint_technical_name: NAV_HINT_BUILDCC
+		hint_id: 1
+	id: 1
+		hint_index: 1
+		hint_name: Build Infantry Portal
+		hint_technical_name: NAV_HINT_BUILDIP
+		hint_id: 2
