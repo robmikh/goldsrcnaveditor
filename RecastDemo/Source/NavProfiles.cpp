@@ -1566,7 +1566,7 @@ void OutputIncludeHeader(NavGameProfile* Profile)
 
 	fprintf(fp, "\tNAV_FLAG_ALL = -1\t\t// All flags\n");
 
-	fprintf(fp, "}\n\n");
+	fprintf(fp, "};\n\n");
 
 	fprintf(fp, "// Area types. Defines the cost of movement through an area and which flag to use\n");
 	fprintf(fp, "enum NavArea\n");
@@ -1579,7 +1579,7 @@ void OutputIncludeHeader(NavGameProfile* Profile)
 		fprintf(fp, "\t%s = %u,\t\t// %s\n", it->TechnicalName.c_str(), it->AreaId, it->AreaName.c_str());
 	}
 
-	fprintf(fp, "}\n\n");
+	fprintf(fp, "};\n\n");
 
 	fprintf(fp, "// Retrieve appropriate flag for area (See process() in the MeshProcess struct)\n");
 	fprintf(fp, "inline NavMovementFlag GetFlagForArea(NavArea Area)\n");
