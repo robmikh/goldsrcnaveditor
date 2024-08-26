@@ -62,7 +62,7 @@ NavGameProfile* CreateNewGameProfile()
 	DefaultNullArea.AreaName = "Unwalkable";
 	DefaultNullArea.TechnicalName = "NAV_AREA_UNWALKABLE";
 	DefaultNullArea.AreaId = 60;
-	DefaultNullArea.FlagIndex = 0;
+	DefaultNullArea.FlagIndex = 31;
 	DefaultNullArea.bCustom = false;
 	DefaultNullArea.R = 10.0f;
 	DefaultNullArea.G = 10.0f;
@@ -93,11 +93,23 @@ NavGameProfile* CreateNewGameProfile()
 	DefaultCrouchArea.B = 150.0f;
 	DefaultCrouchArea.DebugColor = duRGBA2(9, 130, 150, 255);
 
+	NavAreaDefinition DefaultObstructedArea;
+	DefaultObstructedArea.NavAreaIndex = 3;
+	DefaultObstructedArea.AreaName = "Obstructed";
+	DefaultObstructedArea.TechnicalName = "NAV_AREA_OBSTRUCTED";
+	DefaultObstructedArea.AreaId = 3;
+	DefaultObstructedArea.FlagIndex = 3;
+	DefaultObstructedArea.bCustom = false;
+	DefaultObstructedArea.R = 255.0f;
+	DefaultObstructedArea.G = 64.0f;
+	DefaultObstructedArea.B = 64.0f;
+	DefaultObstructedArea.DebugColor = duRGBA2(130, 130, 32, 255);
+
 	NavAreaDefinition DefaultHazardArea;
-	DefaultHazardArea.NavAreaIndex = 3;
+	DefaultHazardArea.NavAreaIndex = 4;
 	DefaultHazardArea.AreaName = "Hazard";
 	DefaultHazardArea.TechnicalName = "NAV_AREA_HAZARD";
-	DefaultHazardArea.AreaId = 3;
+	DefaultHazardArea.AreaId = 4;
 	DefaultHazardArea.FlagIndex = 1;
 	DefaultHazardArea.bCustom = false;
 	DefaultHazardArea.R = 192.0f;
@@ -108,6 +120,7 @@ NavGameProfile* CreateNewGameProfile()
 	NewProfile.AreaDefinitions.push_back(DefaultNullArea);
 	NewProfile.AreaDefinitions.push_back(DefaultWalkArea);
 	NewProfile.AreaDefinitions.push_back(DefaultCrouchArea);
+	NewProfile.AreaDefinitions.push_back(DefaultObstructedArea);
 	NewProfile.AreaDefinitions.push_back(DefaultHazardArea);
 
 	NavFlagDefinition DisabledFlagDef;
@@ -1092,6 +1105,12 @@ void LoadProfileConfig(string ProfileName)
 
 				if (!CurrFlag) { continue; }
 
+				if (!_stricmp(keyChar, "flag_index"))
+				{
+					CurrFlag->NavFlagIndex = (unsigned int)atoi(valueChar);
+					continue;
+				}
+
 				if (!_stricmp(keyChar, "flag_id"))
 				{
 					CurrFlag->FlagId = (unsigned int)atoi(valueChar);
@@ -1403,6 +1422,7 @@ void OutputProfileConfig(NavGameProfile* Profile)
 	for (auto it = Profile->FlagDefinitions.begin(); it != Profile->FlagDefinitions.end(); it++)
 	{
 		fprintf(fp, "\tid: %d\n", FlagIndex);
+		fprintf(fp, "\t\tflag_index: %u\n", it->NavFlagIndex);
 		fprintf(fp, "\t\tflag_id: %u\n", it->FlagId);
 		fprintf(fp, "\t\tflag_name: %s\n", it->FlagName.c_str());
 		fprintf(fp, "\t\tflag_tech_name: %s\n", it->TechnicalName.c_str());
@@ -1602,7 +1622,103 @@ void OutputIncludeHeader(NavGameProfile* Profile)
 	fprintf(fp, "\t}\n");
 	fprintf(fp, "}\n\n");
 
+	fprintf(fp, "// Get appropriate debug colour for the area. Returns RGB as 3 unsigned chars encoded into a single unsigned int\n");
+	fprintf(fp, "inline void GetDebugColorForArea(NavArea Area, unsigned char& R, unsigned char& G, unsigned char& B)\n");
+	fprintf(fp, "{\n");
+	fprintf(fp, "\tswitch(Area)\n");
+	fprintf(fp, "\t{\n");
+
+	for (auto it = AllAreas.begin(); it != AllAreas.end(); it++)
+	{
+		fprintf(fp, "\t\tcase %s:\n", it->TechnicalName.c_str());
+		fprintf(fp, "\t\t\tR = %u;\n", (unsigned char)it->R);
+		fprintf(fp, "\t\t\tG = %u;\n", (unsigned char)it->G);
+		fprintf(fp, "\t\t\tB = %u;\n", (unsigned char)it->B);
+		fprintf(fp, "\t\t\tbreak;\n");
+	}
+
+	fprintf(fp, "\t\tdefault:\n");
+	fprintf(fp, "\t\t\tR = 255;\n");
+	fprintf(fp, "\t\t\tG = 255;\n");
+	fprintf(fp, "\t\t\tB = 255;\n");
+	fprintf(fp, "\t\t\tbreak;\n");
+
+
+	fprintf(fp, "\t}\n");
+	fprintf(fp, "}\n\n");
+
+	fprintf(fp, "// Get appropriate debug colour for the movement flag. Returns RGB as 3 unsigned chars encoded into a single unsigned int\n");
+	fprintf(fp, "inline void GetDebugColorForFlag(NavMovementFlag Flag, unsigned char& R, unsigned char& G, unsigned char& B)\n");
+	fprintf(fp, "{\n");
+	fprintf(fp, "\tswitch(Flag)\n");
+	fprintf(fp, "\t{\n");
+
+	for (auto it = AllFlags.begin(); it != AllFlags.end(); it++)
+	{
+		fprintf(fp, "\t\tcase %s:\n", it->TechnicalName.c_str());
+		fprintf(fp, "\t\t\tR = %u;\n", (unsigned char)it->R);
+		fprintf(fp, "\t\t\tG = %u;\n", (unsigned char)it->G);
+		fprintf(fp, "\t\t\tB = %u;\n", (unsigned char)it->B);
+		fprintf(fp, "\t\t\tbreak;\n");
+	}
+
+	fprintf(fp, "\t\tdefault:\n");
+	fprintf(fp, "\t\t\tR = 255;\n");
+	fprintf(fp, "\t\t\tG = 255;\n");
+	fprintf(fp, "\t\t\tB = 255;\n");
+	fprintf(fp, "\t\t\tbreak;\n");
+
+
+	fprintf(fp, "\t}\n");
+	fprintf(fp, "}\n\n");
+
+	fprintf(fp, "// Return name of a flag for debugging purposes\n");
+	fprintf(fp, "inline void GetFlagName(NavMovementFlag Flag, char* outName)\n");
+	fprintf(fp, "{\n");
+	fprintf(fp, "\tif (!outName) { return; }\n\n");
+	fprintf(fp, "\tswitch(Flag)\n");
+	fprintf(fp, "\t{\n");
+
+	for (auto it = AllFlags.begin(); it != AllFlags.end(); it++)
+	{
+		fprintf(fp, "\t\tcase %s:\n", it->TechnicalName.c_str());
+		fprintf(fp, "\t\t\tsprintf(outName, \"%s\");\n", it->FlagName.c_str());
+		fprintf(fp, "\t\t\tbreak;\n");
+	}
+
+	fprintf(fp, "\t\tdefault:\n");
+	fprintf(fp, "\t\t\tsprintf(outName, \"Undefined\");\n");
+	fprintf(fp, "\t\t\tbreak;\n");
+
+
+	fprintf(fp, "\t}\n");
+	fprintf(fp, "}\n\n");
+
+	fprintf(fp, "// Return name of a flag for debugging purposes\n");
+	fprintf(fp, "inline void GetAreaName(NavArea Area, char* outName)\n");
+	fprintf(fp, "{\n");
+	fprintf(fp, "\tif (!outName) { return; }\n\n");
+	fprintf(fp, "\tswitch(Area)\n");
+	fprintf(fp, "\t{\n");
+
+	for (auto it = AllAreas.begin(); it != AllAreas.end(); it++)
+	{
+		fprintf(fp, "\t\tcase %s:\n", it->TechnicalName.c_str());
+		fprintf(fp, "\t\t\tsprintf(outName, \"%s\");\n", it->AreaName.c_str());
+		fprintf(fp, "\t\t\tbreak;\n");
+	}
+
+	fprintf(fp, "\t\tdefault:\n");
+	fprintf(fp, "\t\t\tsprintf(outName, \"Undefined\");\n");
+	fprintf(fp, "\t\t\tbreak;\n");
+
+
+	fprintf(fp, "\t}\n");
+	fprintf(fp, "}\n\n");
+
 	fprintf(fp, "#endif // NAV_CONSTANTS_H");
+
+
 
 	fclose(fp);
 
