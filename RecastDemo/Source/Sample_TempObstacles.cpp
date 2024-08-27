@@ -1477,15 +1477,22 @@ struct TileCacheSetHeader
 	dtTileCacheParams cacheParams;
 
 	int NumOffMeshCons = 0;
+	int OffMeshConsOffset = 0;
+
 	int NumConvexVols = 0;
+	int ConvexVolsOffset = 0;
+
 	int NumNavHints = 0;
+	int NavHintsOffset = 0;
 };
 
 struct TileCacheExportHeader
 {
 	int magic;
 	int version;
+
 	int numTileCaches;
+	int tileCacheDataOffset = 0;
 
 	int tileCacheOffsets[8];
 
@@ -1533,6 +1540,8 @@ void Sample_TempObstacles::SaveData(const char* path)
 	int surfTypesSize = NewFileHeader.NumSurfTypes * sizeof(const int);
 
 	fwrite(surfTypes, surfTypesSize, 1, fp);
+
+	NewFileHeader.tileCacheDataOffset = ftell(fp);
 
 	for (int i = 0; i < NumMeshes; i++)
 	{
@@ -1600,6 +1609,8 @@ void Sample_TempObstacles::SaveData(const char* path)
 			fwrite(tile->data, tile->dataSize, 1, fp);
 		}
 
+		tcHeader.OffMeshConsOffset = ftell(fp);
+
 		// First remove all the connections so they don't get persisted. These are meant to be dynamic and not baked into the saved data
 		for (int ii = 0; ii < m_NavMeshArray[i].m_tileCache->getOffMeshCount(); ii++)
 		{
@@ -1610,6 +1621,8 @@ void Sample_TempObstacles::SaveData(const char* path)
 			fwrite(con, sizeof(dtOffMeshConnection), 1, fp);
 		}
 
+		tcHeader.ConvexVolsOffset = ftell(fp);
+
 		for (int ii = 0; ii < m_geom->getConvexVolumeCount(); ii++)
 		{
 			if (vols[i].NavMeshIndex != i) { continue; }
@@ -1617,12 +1630,21 @@ void Sample_TempObstacles::SaveData(const char* path)
 			fwrite(&vols[i], sizeof(ConvexVolume), 1, fp);
 		}
 
+		tcHeader.NavHintsOffset = ftell(fp);
+
 		for (int ii = 0; ii < m_geom->getNavHintCount(); ii++)
 		{
 			if (hints[i].NavMeshIndex != i) { continue; }
 
 			fwrite(&hints[i], sizeof(NavHint), 1, fp);
 		}
+
+		int endMeshOffset = ftell(fp);
+
+		fseek(fp, NewFileHeader.tileCacheOffsets[i], SEEK_SET);
+		fwrite(&tcHeader, sizeof(TileCacheSetHeader), 1, fp);
+		fseek(fp, endMeshOffset, SEEK_SET);
+
 	}
 
 	fseek(fp, 0, SEEK_SET);

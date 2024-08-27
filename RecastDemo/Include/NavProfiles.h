@@ -60,6 +60,7 @@ typedef struct _NAV_FLAG_DEF
 typedef struct _AGENT_PROFILE
 {
 	string ProfileName = "New Profile";
+	string TechnicalName = "NAV_PROFILE_PLAYER";
 
 	unsigned int NavMeshIndex = 0;
 

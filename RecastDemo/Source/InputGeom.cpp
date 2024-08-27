@@ -606,7 +606,6 @@ void InputGeom::addNavHint(unsigned int NavMeshIndex, const float* pos, unsigned
 	memset(hint, 0, sizeof(NavHint));
 	hint->NavMeshIndex = NavMeshIndex;
 	memcpy(hint->position, pos, sizeof(float) * 3);
-	hint->id = m_HintCount - 1;
 	hint->hintType = types;
 }
 

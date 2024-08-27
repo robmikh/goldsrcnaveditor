@@ -1309,6 +1309,12 @@ void LoadProfileConfig(string ProfileName)
 					continue;
 				}
 
+				if (!_stricmp(keyChar, "technical_name"))
+				{
+					CurrAgent->TechnicalName = valueChar;
+					continue;
+				}
+
 				if (!_stricmp(keyChar, "mesh_index"))
 				{
 					CurrAgent->NavMeshIndex = (unsigned int)atoi(valueChar);
@@ -1505,6 +1511,7 @@ void OutputProfileConfig(NavGameProfile* Profile)
 	{
 		fprintf(fp, "\tid: %d\n", ProfileIndex);
 		fprintf(fp, "\t\tagent_name: %s\n", it->ProfileName.c_str());
+		fprintf(fp, "\t\ttechnical_name: %s\n", it->TechnicalName.c_str());
 		fprintf(fp, "\t\tmesh_index: %d\n", it->NavMeshIndex);
 		fprintf(fp, "\t\tarea_costs: {%.1f", it->AreaCosts[0]);
 
@@ -1573,6 +1580,8 @@ void OutputIncludeHeader(NavGameProfile* Profile)
 	fprintf(fp, "#ifndef NAV_CONSTANTS_H\n");
 	fprintf(fp, "#define NAV_CONSTANTS_H\n\n");
 
+	fprintf(fp, "#include <vector>\n\n");
+
 	fprintf(fp, "// Possible movement types. Defines the actions the bot needs to take to traverse this node\n");
 	fprintf(fp, "enum NavMovementFlag\n");
 	fprintf(fp, "{\n");
@@ -1600,6 +1609,35 @@ void OutputIncludeHeader(NavGameProfile* Profile)
 	}
 
 	fprintf(fp, "};\n\n");
+
+	fprintf(fp, "// Profile indices. Use these when retrieving base agent profile information\n");
+	fprintf(fp, "enum NavProfileIndex\n");
+	fprintf(fp, "{\n");
+
+	vector<NavAgentProfile> AllProfiles = GetAllAgentProfileDefinitions();
+	int ProfileIndex = 0;
+
+	for (auto it = AllProfiles.begin(); it != AllProfiles.end(); it++)
+	{
+		fprintf(fp, "\t%s = %u,\t\t// %s\n", it->TechnicalName.c_str(), ProfileIndex, it->ProfileName.c_str());
+		ProfileIndex++;
+	}
+
+	fprintf(fp, "\t%s = %u,\t\t// Default profile which has all capabilities except disabled flags, and 1.0 area costs for everything \n", "NAV_PROFILE_DEFAULT", ProfileIndex);
+
+	fprintf(fp, "};\n\n");
+
+	fprintf(fp, "// Agent profile definition. Holds all information an agent needs when querying the nav mesh\n");
+	fprintf(fp, "typedef struct _NAV_AGENT_PROFILE\n");
+	fprintf(fp, "{\n");
+	fprintf(fp, "\tunsigned int NavMeshIndex = 0;\n");
+	fprintf(fp, "\tclass dtQueryFilter Filters;\n");
+	fprintf(fp, "\tbool bFlyingProfile = false;\n");
+	fprintf(fp, "} NavAgentProfile;\n\n");
+
+	fprintf(fp, "// Declared in DTNavigation.cpp\n");
+	fprintf(fp, "// List of base agent profiles\n");
+	fprintf(fp, "extern std::vector<NavAgentProfile> BaseAgentProfiles;\n\n");
 
 	fprintf(fp, "// Retrieve appropriate flag for area (See process() in the MeshProcess struct)\n");
 	fprintf(fp, "inline NavMovementFlag GetFlagForArea(NavArea Area)\n");
@@ -1714,6 +1752,50 @@ void OutputIncludeHeader(NavGameProfile* Profile)
 
 
 	fprintf(fp, "\t}\n");
+	fprintf(fp, "}\n\n");
+
+
+	fprintf(fp, "// Populate the base nav profiles. Should be called once after loading the navigation data\n");
+	fprintf(fp, "inline void PopulateBaseAgentProfiles()\n");
+	fprintf(fp, "{\n");
+	fprintf(fp, "\tBaseAgentProfiles.clear();\n\n");
+	for (auto it = AllProfiles.begin(); it != AllProfiles.end(); it++)
+	{
+		fprintf(fp, "\tNavAgentProfile NewProfile;\n");
+		fprintf(fp, "\tNewProfile.NavMeshIndex = %u;\n", it->NavMeshIndex);
+		fprintf(fp, "\tNewProfile.Filters.setIncludeFlags(%u);\n", it->MovementFlags);
+		fprintf(fp, "\tNewProfile.Filters.setExcludeFlags(NAV_FLAG_DISABLED);\n");
+
+		for (auto areaIt = AllAreas.begin(); areaIt != AllAreas.end(); areaIt++)
+		{
+			fprintf(fp, "\tNewProfile.Filters.setAreaCost(%u, %.1f);\n", areaIt->NavAreaIndex, it->AreaCosts[areaIt->NavAreaIndex]);			
+		}
+
+		fprintf(fp, "\tBaseAgentProfiles.push_back(NewProfile);\n\n");
+		
+	}
+
+	fprintf(fp, "\tNavAgentProfile DefaultProfile;\n");
+	fprintf(fp, "\tDefaultProfile.NavMeshIndex = 0;\n");
+	fprintf(fp, "\tDefaultProfile.Filters.setIncludeFlags(0x7fffffff);\n");
+	fprintf(fp, "\tDefaultProfile.Filters.setExcludeFlags(NAV_FLAG_DISABLED);\n");
+
+	for (auto areaIt = AllAreas.begin(); areaIt != AllAreas.end(); areaIt++)
+	{
+		fprintf(fp, "\tDefaultProfile.Filters.setAreaCost(%u, 1.0);\n", areaIt->NavAreaIndex);
+	}
+
+	fprintf(fp, "\tBaseAgentProfiles.push_back(DefaultProfile);\n\n");
+
+	fprintf(fp, "}\n\n");
+
+
+	fprintf(fp, "// Return the appropriate base nav profile information\n");
+	fprintf(fp, "inline const NavAgentProfile* GetBaseAgentProfile(const NavProfileIndex Index)\n");
+	fprintf(fp, "{\n");
+
+	fprintf(fp, "return &BaseAgentProfiles[Index];");
+
 	fprintf(fp, "}\n\n");
 
 	fprintf(fp, "#endif // NAV_CONSTANTS_H");

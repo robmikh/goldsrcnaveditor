@@ -783,6 +783,18 @@ bool showNavProfileDetails(const int ProfileIndex)
 		return true;
 	}
 
+	imguiLabel("Profile Technical Name");
+
+	sprintf(RowEntry, "%s", ProfileDef->TechnicalName.c_str());
+
+	if (imguiButton(RowEntry, true))
+	{
+		ResetProfileMenus();
+		SetCurrentlyModifiedString(&ProfileDef->TechnicalName);
+
+		return true;
+	}
+
 	imguiSeparator();
 
 	imguiLabel("Nav Mesh Used");

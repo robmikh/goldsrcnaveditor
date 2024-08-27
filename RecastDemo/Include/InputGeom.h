@@ -35,7 +35,6 @@ struct ConvexVolume
 struct NavHint
 {
 	unsigned int NavMeshIndex = 0;
-	unsigned int id = 0;
 	unsigned int hintType = 0;
 	float position[3] = { 0.0f, 0.0f, 0.0f };
 };
