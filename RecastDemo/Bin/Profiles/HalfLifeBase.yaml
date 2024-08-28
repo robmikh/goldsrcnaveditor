@@ -13,7 +13,7 @@ flags:
 		G: 8.0
 		B: 8.0
 	id: 1
-		flag_index: 1
+		flag_index: 0
 		flag_id: 1
 		flag_name: Walk
 		flag_tech_name: NAV_FLAG_WALK
@@ -22,7 +22,7 @@ flags:
 		G: 192.0
 		B: 255.0
 	id: 2
-		flag_index: 2
+		flag_index: 1
 		flag_id: 2
 		flag_name: Crouch
 		flag_tech_name: NAV_FLAG_CROUCH
@@ -31,7 +31,7 @@ flags:
 		G: 130.0
 		B: 150.0
 	id: 3
-		flag_index: 3
+		flag_index: 2
 		flag_id: 4
 		flag_name: Jump
 		flag_tech_name: NAV_FLAG_JUMP
@@ -40,7 +40,7 @@ flags:
 		G: 200.0
 		B: 0.0
 	id: 4
-		flag_index: 4
+		flag_index: 3
 		flag_id: 8
 		flag_name: Ladder
 		flag_tech_name: NAV_FLAG_LADDER
@@ -49,7 +49,7 @@ flags:
 		G: 64.0
 		B: 255.0
 	id: 5
-		flag_index: 5
+		flag_index: 4
 		flag_id: 16
 		flag_name: Fall
 		flag_tech_name: NAV_FLAG_FALL
@@ -152,6 +152,7 @@ mesh_count: 1
 meshes:
 	id: 0
 		mesh_name: Nav Mesh
+		technical_name: NAV_MESH_PLAYER
 		agent_radius: 16.0
 		agent_stand_height: 72.0
 		agent_crouch_height: 32.0
@@ -162,8 +163,9 @@ agent_profile_count: 1
 agent_profiles:
 	id: 0
 		agent_name: Base Player
+		technical_name: NAV_PROFILE_PLAYER
 		mesh_index: 0
-		area_costs: {1.0,1.0,2.0,4.0,10.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0}
+		area_costs: {0.0,1.0,2.0,4.0,10.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0}
 		movement_flags: 63
 
 nav_hint_count: 1

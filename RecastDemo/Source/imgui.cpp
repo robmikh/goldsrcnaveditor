@@ -1001,14 +1001,16 @@ bool addNavMeshRow(const int MeshIndex)
 
 	int IDWidth = (int)(ceilf((float)TotalWidth * 0.1f));
 	int NameWidth = (int)(ceilf((float)TotalWidth * 0.2f));
-	int RadiusWidth = (int)(ceilf((float)TotalWidth * 0.2f));
-	int StandHeightWidth = (int)(ceilf((float)TotalWidth * 0.2f));
-	int CrouchHeightWidth = (int)(ceilf((float)TotalWidth * 0.2f));
+	int TechnicalNameWidth = (int)(ceilf((float)TotalWidth * 0.15f));
+	int RadiusWidth = (int)(ceilf((float)TotalWidth * 0.15f));
+	int StandHeightWidth = (int)(ceilf((float)TotalWidth * 0.15f));
+	int CrouchHeightWidth = (int)(ceilf((float)TotalWidth * 0.15f));
 	int DeleteWidth = (int)(ceilf((float)TotalWidth * 0.1f));
 
 	int IDStartX = x + 5;
 	int NameStartX = IDStartX + IDWidth;
-	int RadiusStartX = NameStartX + NameWidth;
+	int TechNameStartX = NameStartX + TechnicalNameWidth;
+	int RadiusStartX = TechNameStartX + NameWidth;
 	int StandHeightStartX = RadiusStartX + RadiusWidth;
 	int CrouchHeightStartX = StandHeightStartX + StandHeightWidth;
 	int DeleteStartX = CrouchHeightStartX + CrouchHeightWidth;
@@ -1018,6 +1020,7 @@ bool addNavMeshRow(const int MeshIndex)
 
 	addGfxCmdText(IDStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "ID", imguiRGBA(255, 255, 255, 200));
 	addGfxCmdText(NameStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Descriptive Name", imguiRGBA(255, 255, 255, 200));
+	addGfxCmdText(TechNameStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Technical Name", imguiRGBA(255, 255, 255, 200));
 	addGfxCmdText(RadiusStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Default Agent Radius", imguiRGBA(255, 255, 255, 200));
 	addGfxCmdText(StandHeightStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Default Agent Height (Standing)", imguiRGBA(255, 255, 255, 200));
 	addGfxCmdText(CrouchHeightStartX, HeaderStartY, IMGUI_ALIGN_LEFT, "Default Agent Height (Crouched)", imguiRGBA(255, 255, 255, 200));
@@ -1032,7 +1035,7 @@ bool addNavMeshRow(const int MeshIndex)
 	int endWidgetW = g_state.widgetW;
 
 	g_state.widgetX = NameStartX;
-	g_state.widgetW = RadiusStartX - NameStartX - 20;
+	g_state.widgetW = TechNameStartX - NameStartX - 20;
 	g_state.widgetY = RowStartY + 10;
 
 	sprintf(RowEntry, "%s", MeshDef->NavMeshName.c_str());
@@ -1041,6 +1044,20 @@ bool addNavMeshRow(const int MeshIndex)
 	{
 		ResetProfileMenus();
 		SetCurrentlyModifiedString(&MeshDef->NavMeshName);
+
+		return true;
+	}
+
+	g_state.widgetX = TechNameStartX;
+	g_state.widgetW = RadiusStartX - TechNameStartX - 20;
+	g_state.widgetY = RowStartY + 10;
+
+	sprintf(RowEntry, "%s", MeshDef->TechnicalName.c_str());
+
+	if (imguiButton(RowEntry, true))
+	{
+		ResetProfileMenus();
+		SetCurrentlyModifiedString(&MeshDef->TechnicalName);
 
 		return true;
 	}

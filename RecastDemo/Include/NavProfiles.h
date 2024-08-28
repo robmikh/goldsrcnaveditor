@@ -13,7 +13,7 @@ using std::vector;
 typedef struct _MESH_DEFINITION
 {
 	string NavMeshName = "Nav Mesh";
-
+	string TechnicalName = "NAV_MESH_NEW";
 	float AgentRadius = 16.0f;
 	float AgentStandingHeight = 72.0f;
 	float AgentCrouchingHeight = 32.0f;

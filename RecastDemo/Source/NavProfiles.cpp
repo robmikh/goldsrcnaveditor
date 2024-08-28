@@ -135,7 +135,7 @@ NavGameProfile* CreateNewGameProfile()
 	DisabledFlagDef.DebugColor = duRGBA2(8, 8, 8, 255);
 
 	NavFlagDefinition WalkFlagDef;
-	WalkFlagDef.NavFlagIndex = 1;
+	WalkFlagDef.NavFlagIndex = 0;
 	WalkFlagDef.FlagName = "Walk";
 	WalkFlagDef.TechnicalName = "NAV_FLAG_WALK";
 	WalkFlagDef.FlagId = 1 << 0;
@@ -146,7 +146,7 @@ NavGameProfile* CreateNewGameProfile()
 	WalkFlagDef.DebugColor = duRGBA2(0, 192, 255, 255);
 
 	NavFlagDefinition CrouchFlagDef;
-	CrouchFlagDef.NavFlagIndex = 2;
+	CrouchFlagDef.NavFlagIndex = 1;
 	CrouchFlagDef.FlagName = "Crouch";
 	CrouchFlagDef.TechnicalName = "NAV_FLAG_CROUCH";
 	CrouchFlagDef.FlagId = 1 << 1;
@@ -157,7 +157,7 @@ NavGameProfile* CreateNewGameProfile()
 	CrouchFlagDef.DebugColor = duRGBA2(9, 130, 150, 255);
 
 	NavFlagDefinition JumpFlagDef;
-	JumpFlagDef.NavFlagIndex = 3;
+	JumpFlagDef.NavFlagIndex = 2;
 	JumpFlagDef.FlagName = "Jump";
 	JumpFlagDef.TechnicalName = "NAV_FLAG_JUMP";
 	JumpFlagDef.FlagId = 1 << 2;
@@ -168,7 +168,7 @@ NavGameProfile* CreateNewGameProfile()
 	JumpFlagDef.DebugColor = duRGBA2(200, 200, 0, 255);
 
 	NavFlagDefinition LadderFlagDef;
-	LadderFlagDef.NavFlagIndex = 4;
+	LadderFlagDef.NavFlagIndex = 3;
 	LadderFlagDef.FlagName = "Ladder";
 	LadderFlagDef.TechnicalName = "NAV_FLAG_LADDER";
 	LadderFlagDef.FlagId = 1 << 3;
@@ -179,7 +179,7 @@ NavGameProfile* CreateNewGameProfile()
 	LadderFlagDef.DebugColor = duRGBA2(64, 64, 255, 255);
 
 	NavFlagDefinition FallFlagDef;
-	FallFlagDef.NavFlagIndex = 5;
+	FallFlagDef.NavFlagIndex = 4;
 	FallFlagDef.FlagName = "Fall";
 	FallFlagDef.TechnicalName = "NAV_FLAG_FALL";
 	FallFlagDef.FlagId = 1 << 4;
@@ -1108,12 +1108,7 @@ void LoadProfileConfig(string ProfileName)
 				if (!_stricmp(keyChar, "flag_index"))
 				{
 					CurrFlag->NavFlagIndex = (unsigned int)atoi(valueChar);
-					continue;
-				}
-
-				if (!_stricmp(keyChar, "flag_id"))
-				{
-					CurrFlag->FlagId = (unsigned int)atoi(valueChar);
+					CurrFlag->FlagId = 1 << CurrFlag->NavFlagIndex;
 					continue;
 				}
 
@@ -1261,6 +1256,12 @@ void LoadProfileConfig(string ProfileName)
 				if (!_stricmp(keyChar, "mesh_name"))
 				{
 					CurrMesh->NavMeshName = valueChar;
+					continue;
+				}
+
+				if (!_stricmp(keyChar, "technical_name"))
+				{
+					CurrMesh->TechnicalName = valueChar;
 					continue;
 				}
 
@@ -1491,6 +1492,7 @@ void OutputProfileConfig(NavGameProfile* Profile)
 	{
 		fprintf(fp, "\tid: %d\n", MeshIndex);
 		fprintf(fp, "\t\tmesh_name: %s\n", it->NavMeshName.c_str());
+		fprintf(fp, "\t\ttechnical_name: %s\n", it->TechnicalName.c_str());
 		fprintf(fp, "\t\tagent_radius: %.1f\n", it->AgentRadius);
 		fprintf(fp, "\t\tagent_stand_height: %.1f\n", it->AgentStandingHeight);
 		fprintf(fp, "\t\tagent_crouch_height: %.1f\n", it->AgentCrouchingHeight);
@@ -1580,6 +1582,9 @@ void OutputIncludeHeader(NavGameProfile* Profile)
 	fprintf(fp, "#ifndef NAV_CONSTANTS_H\n");
 	fprintf(fp, "#define NAV_CONSTANTS_H\n\n");
 
+	fprintf(fp, "#define NAV_MESH_DEFAULT 0\n\n");
+	fprintf(fp, "#define NUM_NAV_MESHES %u\n\n", (unsigned int)GetNumNavMeshes());
+
 	fprintf(fp, "#include <vector>\n\n");
 
 	fprintf(fp, "// Possible movement types. Defines the actions the bot needs to take to traverse this node\n");
@@ -1590,7 +1595,7 @@ void OutputIncludeHeader(NavGameProfile* Profile)
 
 	for (auto it = AllFlags.begin(); it != AllFlags.end(); it++)
 	{
-		fprintf(fp, "\t%s = %u,\t\t// %s\n", it->TechnicalName.c_str(), it->FlagId, it->FlagName.c_str());
+		fprintf(fp, "\t%s = 1 << %u,\t\t// %s\n", it->TechnicalName.c_str(), it->NavFlagIndex, it->FlagName.c_str());
 	}
 
 	fprintf(fp, "\tNAV_FLAG_ALL = -1\t\t// All flags\n");
@@ -1600,6 +1605,8 @@ void OutputIncludeHeader(NavGameProfile* Profile)
 	fprintf(fp, "// Area types. Defines the cost of movement through an area and which flag to use\n");
 	fprintf(fp, "enum NavArea\n");
 	fprintf(fp, "{\n");
+
+	fprintf(fp, "\tNAV_AREA_NULL = 0,\t\t// Null area, cuts a hole in the mesh\n");
 
 	vector<NavAreaDefinition> AllAreas = GetAllNavAreaDefinitions();
 
@@ -1626,6 +1633,23 @@ void OutputIncludeHeader(NavGameProfile* Profile)
 	fprintf(fp, "\t%s = %u,\t\t// Default profile which has all capabilities except disabled flags, and 1.0 area costs for everything \n", "NAV_PROFILE_DEFAULT", ProfileIndex);
 
 	fprintf(fp, "};\n\n");
+
+	fprintf(fp, "// Profile indices. Use these when retrieving base agent profile information\n");
+	fprintf(fp, "enum NavMeshIndex\n");
+	fprintf(fp, "{\n");
+
+	vector<NavMeshDefinition> AllMeshes = GetAllMeshDefinitions();
+	int MeshIndex = 0;
+
+	for (auto it = AllMeshes.begin(); it != AllMeshes.end(); it++)
+	{
+		fprintf(fp, "\t%s = %u,\t\t// %s\n", it->TechnicalName.c_str(), MeshIndex, it->NavMeshName.c_str());
+		MeshIndex++;
+	}
+
+	fprintf(fp, "};\n\n");
+
+
 
 	fprintf(fp, "// Agent profile definition. Holds all information an agent needs when querying the nav mesh\n");
 	fprintf(fp, "typedef struct _NAV_AGENT_PROFILE\n");
@@ -1665,6 +1689,12 @@ void OutputIncludeHeader(NavGameProfile* Profile)
 	fprintf(fp, "{\n");
 	fprintf(fp, "\tswitch(Area)\n");
 	fprintf(fp, "\t{\n");
+
+	fprintf(fp, "\t\tcase NAV_AREA_NULL:\n");
+	fprintf(fp, "\t\t\tR = 128;\n");
+	fprintf(fp, "\t\t\tG = 128;\n");
+	fprintf(fp, "\t\t\tB = 128;\n");
+	fprintf(fp, "\t\t\tbreak;\n");
 
 	for (auto it = AllAreas.begin(); it != AllAreas.end(); it++)
 	{
@@ -1791,10 +1821,10 @@ void OutputIncludeHeader(NavGameProfile* Profile)
 
 
 	fprintf(fp, "// Return the appropriate base nav profile information\n");
-	fprintf(fp, "inline const NavAgentProfile* GetBaseAgentProfile(const NavProfileIndex Index)\n");
+	fprintf(fp, "inline const NavAgentProfile GetBaseAgentProfile(const NavProfileIndex Index)\n");
 	fprintf(fp, "{\n");
 
-	fprintf(fp, "return &BaseAgentProfiles[Index];");
+	fprintf(fp, "return BaseAgentProfiles[Index];");
 
 	fprintf(fp, "}\n\n");
 

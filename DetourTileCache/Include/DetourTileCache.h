@@ -46,6 +46,7 @@ struct dtObstacleCylinder
 	float pos[ 3 ];
 	float radius;
 	float height;
+	int area;
 };
 
 struct dtObstacleBox
@@ -141,7 +142,7 @@ public:
 	dtStatus removeTile(dtCompressedTileRef ref, unsigned char** data, int* dataSize);
 	
 	// Cylinder obstacle.
-	dtStatus addObstacle(const float* pos, const float radius, const float height, dtObstacleRef* result);
+	dtStatus addObstacle(const float* pos, const float radius, const float height, const int area, dtObstacleRef* result);
 
 	// Aabb obstacle.
 	dtStatus addBoxObstacle(const float* bmin, const float* bmax, dtObstacleRef* result);

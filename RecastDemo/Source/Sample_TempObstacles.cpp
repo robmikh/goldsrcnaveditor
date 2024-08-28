@@ -786,6 +786,7 @@ TempObstacleHilightTool::~TempObstacleHilightTool()
 class TempObstacleCreateTool : public SampleTool
 {
 	Sample_TempObstacles* m_sample;
+	unsigned char m_Area = 0;
 	
 public:
 	
@@ -807,6 +808,21 @@ public:
 	virtual void handleMenu()
 	{
 		imguiLabel("Create Temp Obstacles");
+
+		if (imguiCheck("Null", m_Area == 0))
+		{
+			m_Area = 0;
+		}
+
+		vector<NavAreaDefinition> AllAreas = GetAllNavAreaDefinitions();
+
+		for (auto it = AllAreas.begin(); it != AllAreas.end(); it++)
+		{
+			if (imguiCheck(it->AreaName.c_str(), m_Area == it->AreaId))
+			{
+				m_Area = it->AreaId;
+			}
+		}
 		
 		if (imguiButton("Remove All"))
 			m_sample->clearAllTempObstacles();
@@ -824,7 +840,7 @@ public:
 			if (shift)
 				m_sample->removeTempObstacle(s,p);
 			else
-				m_sample->addTempObstacle(p);
+				m_sample->addTempObstacle(p, m_Area);
 		}
 	}
 	
@@ -1007,12 +1023,16 @@ void Sample_TempObstacles::handleDebugMode()
 	
 	if (m_geom)
 	{
-		valid[DRAWMODE_NAVMESH] = m_navMesh != 0;
-		valid[DRAWMODE_NAVMESH_TRANS] = m_navMesh != 0;
-		valid[DRAWMODE_NAVMESH_BVTREE] = m_navMesh != 0;
-		valid[DRAWMODE_NAVMESH_NODES] = m_navQuery != 0;
-		valid[DRAWMODE_NAVMESH_PORTALS] = m_navMesh != 0;
-		valid[DRAWMODE_NAVMESH_INVIS] = m_navMesh != 0;
+		dtNavMesh* CurrentMesh = m_NavMeshArray[m_SelectedNavMeshIndex].m_navMesh;
+		dtNavMeshQuery* CurrentQuery = m_NavMeshArray[m_SelectedNavMeshIndex].m_navQuery;
+
+		valid[DRAWMODE_NAVMESH] = CurrentMesh != 0;
+		valid[DRAWMODE_NAVMESH_TRANS] = CurrentMesh != 0;
+		valid[DRAWMODE_NAVMESH_BVTREE] = CurrentMesh != 0;
+		valid[DRAWMODE_NAVMESH_NODES] = CurrentQuery != 0;
+		valid[DRAWMODE_NAVMESH_PORTALS] = CurrentMesh != 0;
+		valid[DRAWMODE_NAVMESH_INVIS] = CurrentMesh != 0;
+
 		valid[DRAWMODE_MESH] = true;
 		valid[DRAWMODE_CACHE_BOUNDS] = true;
 	}
@@ -1188,22 +1208,26 @@ void Sample_TempObstacles::handleMeshChanged(class InputGeom* geom)
 	initToolStates(this);
 }
 
-void Sample_TempObstacles::addTempObstacle(const float* pos)
+void Sample_TempObstacles::addTempObstacle(const float* pos, const unsigned char Area)
 {
-	if (!m_tileCache)
+	dtTileCache* CurrentTileCache = m_NavMeshArray[m_SelectedNavMeshIndex].m_tileCache;
+
+	if (!CurrentTileCache)
 		return;
 	float p[3];
 	dtVcopy(p, pos);
 	p[1] -= 0.5f;
-	m_tileCache->addObstacle(p, 1.0f, 2.0f, 0);
+	CurrentTileCache->addObstacle(p, 32.0f, 100.0f, Area, 0);
 }
 
 void Sample_TempObstacles::removeTempObstacle(const float* sp, const float* sq)
 {
-	if (!m_tileCache)
+	dtTileCache* CurrentTileCache = m_NavMeshArray[m_SelectedNavMeshIndex].m_tileCache;
+
+	if (!CurrentTileCache)
 		return;
-	dtObstacleRef ref = hitTestObstacle(m_tileCache, sp, sq);
-	m_tileCache->removeObstacle(ref);
+	dtObstacleRef ref = hitTestObstacle(CurrentTileCache, sp, sq);
+	CurrentTileCache->removeObstacle(ref);
 }
 
 void Sample_TempObstacles::clearAllTempObstacles()

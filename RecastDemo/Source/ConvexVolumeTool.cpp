@@ -133,6 +133,11 @@ void ConvexVolumeTool::handleMenu()
 	imguiIndent();
 
 
+	if (imguiCheck("Null", m_areaType == 0))
+	{
+		m_areaType = 0;
+	}
+
 	vector<NavAreaDefinition> AllAreas = GetAllNavAreaDefinitions();
 
 	for (auto it = AllAreas.begin(); it != AllAreas.end(); it++)
