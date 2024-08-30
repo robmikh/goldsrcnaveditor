@@ -962,7 +962,8 @@ void Sample_TempObstacles::handleSettings()
 	{
 		dtFreeNavMesh(m_navMesh);
 		dtFreeTileCache(m_tileCache);
-		loadAll("all_tiles_tilecache.bin");
+		string path = GetCurrentGameProfile()->GameDirectory + "/addons/dtbot/navmeshes/" + CurrentMapName + ".nav";
+		loadAll(path.c_str());
 		m_navQuery->init(m_navMesh, 2048);
 	}
 
