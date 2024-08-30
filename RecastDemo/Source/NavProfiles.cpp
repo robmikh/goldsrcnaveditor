@@ -1602,6 +1602,21 @@ void OutputIncludeHeader(NavGameProfile* Profile)
 
 	fprintf(fp, "};\n\n");
 
+	fprintf(fp, "// Nav hint types\n");
+	fprintf(fp, "enum NavHintType\n");
+	fprintf(fp, "{\n");
+
+	vector<NavHintDefinition> AllNavHints = GetAllNavHintDefinitions();
+
+	for (auto it = AllNavHints.begin(); it != AllNavHints.end(); it++)
+	{
+		fprintf(fp, "\t%s = 1 << %u,\t\t// %s\n", it->TechnicalName.c_str(), it->HintIndex, it->HintName.c_str());
+	}
+
+	fprintf(fp, "\tNAV_HINT_ANY = -1\t\t// Any hint type\n");
+
+	fprintf(fp, "};\n\n");
+
 	fprintf(fp, "// Area types. Defines the cost of movement through an area and which flag to use\n");
 	fprintf(fp, "enum NavArea\n");
 	fprintf(fp, "{\n");
@@ -1649,8 +1664,6 @@ void OutputIncludeHeader(NavGameProfile* Profile)
 
 	fprintf(fp, "};\n\n");
 
-
-
 	fprintf(fp, "// Agent profile definition. Holds all information an agent needs when querying the nav mesh\n");
 	fprintf(fp, "typedef struct _NAV_AGENT_PROFILE\n");
 	fprintf(fp, "{\n");
@@ -1662,6 +1675,14 @@ void OutputIncludeHeader(NavGameProfile* Profile)
 	fprintf(fp, "// Declared in DTNavigation.cpp\n");
 	fprintf(fp, "// List of base agent profiles\n");
 	fprintf(fp, "extern std::vector<NavAgentProfile> BaseAgentProfiles;\n\n");
+
+	fprintf(fp, "// Agent profile definition. Holds all information an agent needs when querying the nav mesh\n");
+	fprintf(fp, "typedef struct _NAV_HINT\n");
+	fprintf(fp, "{\n");
+	fprintf(fp, "\tunsigned int NavMeshIndex = 0;\n");
+	fprintf(fp, "\tunsigned int HintTypes = 0;\n");
+	fprintf(fp, "\tVector Position;\n");
+	fprintf(fp, "} NavHint;\n\n");
 
 	fprintf(fp, "// Retrieve appropriate flag for area (See process() in the MeshProcess struct)\n");
 	fprintf(fp, "inline NavMovementFlag GetFlagForArea(NavArea Area)\n");
@@ -1827,6 +1848,8 @@ void OutputIncludeHeader(NavGameProfile* Profile)
 	fprintf(fp, "return BaseAgentProfiles[Index];");
 
 	fprintf(fp, "}\n\n");
+
+
 
 	fprintf(fp, "#endif // NAV_CONSTANTS_H");
 
