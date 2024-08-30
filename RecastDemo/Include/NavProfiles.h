@@ -93,6 +93,8 @@ typedef struct _GAME_PROFILE
 
 	vector<NavMeshDefinition> MeshDefinitions;
 
+	string GameDirectory = "";
+
 
 } NavGameProfile;
 

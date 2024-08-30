@@ -954,7 +954,8 @@ void Sample_TempObstacles::handleSettings()
 
 	if (imguiButton("Save"))
 	{
-		saveAll("all_tiles_tilecache.bin");
+		string path = GetCurrentGameProfile()->GameDirectory + "/addons/dtbot/navmeshes/" + CurrentMapName + ".nav";
+		saveAll(path.c_str());
 	}
 
 	if (imguiButton("Load"))
@@ -1534,9 +1535,7 @@ void Sample_TempObstacles::saveAll(const char* path)
 {
 	if (!m_NavMeshArray[0].m_tileCache) return;
 
-	std::string SavePath = ExportFolder;
-	SavePath.append(path);
-	SaveData(SavePath.data());
+	SaveData(path);
 }
 
 void Sample_TempObstacles::SaveData(const char* path)

@@ -1001,6 +1001,12 @@ void LoadProfileConfig(string ProfileName)
 				continue;
 			}
 
+			if (!_stricmp(keyChar, "game_directory"))
+			{
+				LoadedProfile->GameDirectory = valueChar;
+				continue;
+			}
+
 			if (!_stricmp(keyChar, "flags"))
 			{
 				mode = 1;
@@ -1419,7 +1425,8 @@ void OutputProfileConfig(NavGameProfile* Profile)
 	if (!fp) { return; }
 
 	fprintf(fp, "---\n");
-	fprintf(fp, "game_name: %s\n\n", Profile->GameName.c_str());
+	fprintf(fp, "game_name: %s\n", Profile->GameName.c_str());
+	fprintf(fp, "game_directory: %s\n\n", Profile->GameDirectory.c_str());
 
 	fprintf(fp, "flag_count: %u\n", Profile->FlagDefinitions.size());
 	fprintf(fp, "flags:\n");

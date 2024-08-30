@@ -619,7 +619,7 @@ int main(int /*argc*/, char** /*argv*/)
 
 				sprintf(PanelTitle, "Game Profile: %s", CurrentNavProfile->GameName.c_str());
 
-				if (imguiBeginScrollArea(PanelTitle, 270, height - 300, width - 270 - 20, 290, &profileScroll))
+				if (imguiBeginScrollArea(PanelTitle, 270, height - 360, width - 270 - 20, 350, &profileScroll))
 					mouseOverMenu = true;
 
 				imguiSeparator();
@@ -629,6 +629,15 @@ int main(int /*argc*/, char** /*argv*/)
 				{
 					ResetProfileMenus();
 					SetCurrentlyModifiedString(&CurrentNavProfile->GameName);
+				}
+
+				imguiSeparator();
+				imguiLabel("Game (or mod) Directory:");
+
+				if (imguiButton(CurrentNavProfile->GameDirectory.c_str()))
+				{
+					ResetProfileMenus();
+					SetCurrentlyModifiedString(&CurrentNavProfile->GameDirectory);
 				}
 
 				if (imguiCheck("Flags", bShowProfileFlags, true))
@@ -724,7 +733,7 @@ int main(int /*argc*/, char** /*argv*/)
 				char ScrollAreaName[128];
 
 				int mainPanelStartY = 10;
-				int mainPanelHeight = height - 310;
+				int mainPanelHeight = height - 370;
 
 				if (bShowProfileFlags)
 				{
@@ -947,7 +956,7 @@ int main(int /*argc*/, char** /*argv*/)
 					showSample = false;
 					showTestCases = false;
 					showLevels = true;
-					scanDirectory(meshesFolder, ".bsp", files);
+					scanDirectory((GetCurrentGameProfile()->GameDirectory + "/maps").c_str(), ".bsp", files);
 				}
 			}
 			if (geom)
@@ -1079,10 +1088,20 @@ int main(int /*argc*/, char** /*argv*/)
 				geom = 0;
 				
 				string path;
+				string MapWithoutExtension = meshName;
+
+				auto delimiterPos = MapWithoutExtension.find(".");
+
+				if (delimiterPos != std::string::npos)
+				{ 
+					MapWithoutExtension = MapWithoutExtension.substr(0, delimiterPos);
+				}
+
+				sample->CurrentMapName = MapWithoutExtension;
 
 				if (meshesFolder.length() > 0)
 				{
-					path = meshesFolder + "/" + meshName;
+					path = GetCurrentGameProfile()->GameDirectory + "/maps/" + meshName;
 				}
 				else
 				{

@@ -154,6 +154,8 @@ protected:
 public:
 	Sample();
 	virtual ~Sample();
+
+	std::string CurrentMapName = "undefined";
 	
 	void setContext(BuildContext* ctx) { m_ctx = ctx; }
 
