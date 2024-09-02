@@ -129,7 +129,7 @@ public:
 	inline const int getSurfaceTypeCount() const { if (m_mesh) { return m_mesh->getSurfaceTypeCount(); } return 0; }
 	const rcChunkyTriMesh* getChunkyMesh() const { return m_chunkyMesh; }
 	const BuildSettings* getBuildSettings() const { return m_hasBuildSettings ? &m_buildSettings : 0; }
-	bool raycastMesh(float* src, float* dst, float& tmin);
+	bool raycastMesh(float* src, float* dst, float& tmin, const bool bIncludeIllusionary = true);
 
 	void rebuildChunkyTriMesh();
 

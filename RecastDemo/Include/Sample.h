@@ -138,6 +138,8 @@ protected:
 	bool m_filterLowHangingObstacles;
 	bool m_filterLedgeSpans;
 	bool m_filterWalkableLowHeightSpans;
+
+	bool m_drawIllusionary;
 	
 	SampleTool* m_tool;
 	SampleToolState* m_toolStates[MAX_TOOLS];
@@ -164,6 +166,9 @@ public:
 	void setTool(SampleTool* tool);
 	SampleToolState* getToolState(int type) { return m_toolStates[type]; }
 	void setToolState(int type, SampleToolState* s) { m_toolStates[type] = s; }
+
+	void setDrawIllusionary(bool bNewValue) { m_drawIllusionary = bNewValue; }
+	bool getDrawIllusionary() { return m_drawIllusionary; }
 
 	SampleDebugDraw& getDebugDraw() { return m_dd; }
 

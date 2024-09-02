@@ -78,6 +78,7 @@ Sample::Sample() :
 	m_filterLowHangingObstacles(true),
 	m_filterLedgeSpans(false),
 	m_filterWalkableLowHeightSpans(true),
+	m_drawIllusionary(true),
 	m_tool(0),
 	m_ctx(0)
 {

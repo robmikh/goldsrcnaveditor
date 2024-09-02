@@ -393,7 +393,7 @@ int main(int /*argc*/, char** /*argv*/)
 		if (processHitTest && geom && sample)
 		{
 			float hitTime;
-			bool hit = geom->raycastMesh(rayStart, rayEnd, hitTime);
+			bool hit = geom->raycastMesh(rayStart, rayEnd, hitTime, sample->getDrawIllusionary());
 			
 			if (hit)
 			{

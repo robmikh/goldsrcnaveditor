@@ -373,6 +373,8 @@ void Sample_TileMesh::handleDebugMode()
 		return;
 	
 	imguiLabel("Draw");
+	if (imguiCheck("Illusionary Surfaces", m_drawIllusionary, valid[DRAWMODE_MESH]))
+		m_drawIllusionary = !m_drawIllusionary;
 	if (imguiCheck("Input Mesh", m_drawMode == DRAWMODE_MESH, valid[DRAWMODE_MESH]))
 		m_drawMode = DRAWMODE_MESH;
 	if (imguiCheck("Navmesh", m_drawMode == DRAWMODE_NAVMESH, valid[DRAWMODE_NAVMESH]))
@@ -431,7 +433,7 @@ void Sample_TileMesh::handleRender()
 		// Draw mesh
 		duDebugDrawTriMeshSlope(&m_dd, m_geom->getMesh()->getVerts(), m_geom->getMesh()->getVertCount(),
 								m_geom->getMesh()->getTris(), m_geom->getMesh()->getNormals(), m_geom->getMesh()->getTriCount(),
-								m_agentMaxSlope, texScale, m_geom->getMesh()->getSurfaceTypes(), true);
+								m_agentMaxSlope, texScale, m_geom->getMesh()->getSurfaceTypes(), m_drawIllusionary);
 		m_geom->drawOffMeshConnections(&m_dd);
 	}
 		

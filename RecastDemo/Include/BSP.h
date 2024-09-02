@@ -127,6 +127,30 @@ typedef struct _BSPMODEL
 	int32_t iFirstFace, nFaces;        // Index and count into faces
 } BSPMODEL;
 
+typedef struct _BSPTEXTHEADER
+{
+	uint32_t Count;
+	uint32_t* Offsets;
+} BSPTEXTUREHEADER;
+
+typedef struct BSPTEXTURELUMP
+{
+	char Name[16];
+	uint32_t Width;
+	uint32_t Height;
+	uint32_t MipMapOffsets[4];
+} BSPTEXTURELUMP;
+
+typedef struct BSPTEXTUREINFOLUMP
+{
+	VECTOR3D S;
+	float S_Shift;
+	VECTOR3D T;
+	float T_Shift;
+	uint32_t Texture_Index;
+	uint32_t Flags;
+} BSPTEXTUREINFOLUMP;
+
 typedef struct _NAVMODEL
 {
 	BSPMODEL model;

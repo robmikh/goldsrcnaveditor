@@ -469,40 +469,48 @@ static bool isectSegAABB(const float* sp, const float* sq,
 }
 
 
-bool InputGeom::raycastMesh(float* src, float* dst, float& tmin)
+bool InputGeom::raycastMesh(float* src, float* dst, float& tmin, const bool bIncludeIllusionary)
 {
 	// Prune hit ray.
 	float btmin, btmax;
 	if (!isectSegAABB(src, dst, m_meshBMin, m_meshBMax, btmin, btmax))
 		return false;
 	float p[2], q[2];
-	p[0] = src[0] + (dst[0]-src[0])*btmin;
-	p[1] = src[2] + (dst[2]-src[2])*btmin;
-	q[0] = src[0] + (dst[0]-src[0])*btmax;
-	q[1] = src[2] + (dst[2]-src[2])*btmax;
-	
+	p[0] = src[0] + (dst[0] - src[0]) * btmin;
+	p[1] = src[2] + (dst[2] - src[2]) * btmin;
+	q[0] = src[0] + (dst[0] - src[0]) * btmax;
+	q[1] = src[2] + (dst[2] - src[2]) * btmax;
+
 	int cid[512];
 	const int ncid = rcGetChunksOverlappingSegment(m_chunkyMesh, p, q, cid, 512);
 	if (!ncid)
 		return false;
-	
+
 	tmin = 1.0f;
 	bool hit = false;
 	const float* verts = m_mesh->getVerts();
-	
+
 	for (int i = 0; i < ncid; ++i)
 	{
 		const rcChunkyTriMeshNode& node = m_chunkyMesh->nodes[cid[i]];
-		const int* tris = &m_chunkyMesh->tris[node.i*3];
+		const int* tris = &m_chunkyMesh->tris[node.i * 3];
 		const int ntris = node.n;
+		const int* surfTypes = &m_chunkyMesh->surfTypes[node.i];
 
-		for (int j = 0; j < ntris*3; j += 3)
+
+		for (int j = 0; j < ntris * 3; j += 3)
 		{
+			if (!bIncludeIllusionary)
+			{
+				int surfType = surfTypes[j / 3];
+				if (surfType == RC_ILLUSIONARY_AREA) { continue; }
+			}
+
 			float t = 1;
 			if (intersectSegmentTriangle(src, dst,
-										 &verts[tris[j]*3],
-										 &verts[tris[j+1]*3],
-										 &verts[tris[j+2]*3], t))
+				&verts[tris[j] * 3],
+				&verts[tris[j + 1] * 3],
+				&verts[tris[j + 2] * 3], t))
 			{
 				if (t < tmin)
 					tmin = t;
@@ -510,7 +518,7 @@ bool InputGeom::raycastMesh(float* src, float* dst, float& tmin)
 			}
 		}
 	}
-	
+
 	return hit;
 }
 

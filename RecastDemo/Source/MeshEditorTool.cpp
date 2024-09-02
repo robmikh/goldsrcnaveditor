@@ -36,6 +36,11 @@ MeshEditorTool::MeshEditorTool() :
 
 void MeshEditorTool::handleMenu()
 {
+	if (imguiCheck("Hide Illusionary Surfaces", !m_sample->getDrawIllusionary()))
+	{
+		m_sample->setDrawIllusionary(!m_sample->getDrawIllusionary());
+	}
+
 	imguiLabel("Application Scope");
 	imguiIndent();
 	
@@ -108,7 +113,7 @@ void MeshEditorTool::handleClick(const float* s, const float* p, bool shift)
 	{
 		int thisSurfType = surfTypes[j / 3];
 
-		if (m_sample->getInputGeom()->getHideIllusionary() && thisSurfType == MT_MODEL_ILLUSIONARY) { continue; }
+		if (!m_sample->getDrawIllusionary() && thisSurfType == MT_MODEL_ILLUSIONARY) { continue; }
 
 		float t = 1;
 		if (InputGeom::intersectSegmentTriangle(s, NewPos,

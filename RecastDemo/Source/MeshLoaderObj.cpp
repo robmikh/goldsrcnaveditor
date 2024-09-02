@@ -327,6 +327,7 @@ bool rcMeshLoaderObj::loadBSP(const std::string& filename)
 		int numEdges = fileHeader.lump[LUMP_EDGES].nLength / sizeof(BSPEDGE);
 		int numFaces = fileHeader.lump[LUMP_FACES].nLength / sizeof(BSPFACE);
 		int numModels = fileHeader.lump[LUMP_MODELS].nLength / sizeof(BSPMODEL);
+		int numTexInfo = fileHeader.lump[LUMP_TEXINFO].nLength / sizeof(BSPTEXTUREINFOLUMP);
 
 		int vertsLength = triData->nverts * sizeof(BSPVERTEX);
 		int surfEdgesLength = numSurfEdges * sizeof(BSPSURFEDGE);
@@ -335,6 +336,32 @@ bool rcMeshLoaderObj::loadBSP(const std::string& filename)
 		int modelsLength = numModels * sizeof(BSPMODEL);
 		int trisLength = MAX_MAP_TRIS * 3 * sizeof(int);
 		int entitiesLength = fileHeader.lump[LUMP_ENTITIES].nLength;
+		int texInfoLength = fileHeader.lump[LUMP_TEXINFO].nLength;
+
+		BSPTEXTUREHEADER TextureHeader;
+
+		fseek(bspfile, fileHeader.lump[LUMP_TEXTURES].nOffset, SEEK_SET);
+
+		fread(&TextureHeader, sizeof(uint32_t), 1, bspfile);
+
+		int NumTextureLumps = TextureHeader.Count;
+
+		TextureHeader.Offsets = (uint32_t*)malloc(NumTextureLumps * sizeof(uint32_t));
+
+		BSPTEXTURELUMP* TextureLumps = (BSPTEXTURELUMP*)malloc(NumTextureLumps * sizeof(BSPTEXTURELUMP));
+
+		fread(TextureHeader.Offsets, NumTextureLumps * sizeof(uint32_t), 1, bspfile);
+
+		for (int i = 0; i < NumTextureLumps; i++)
+		{
+			fseek(bspfile, fileHeader.lump[LUMP_TEXTURES].nOffset + TextureHeader.Offsets[i], SEEK_SET);
+			fread(&TextureLumps[i], sizeof(BSPTEXTURELUMP), 1, bspfile);
+		}
+
+		BSPTEXTUREINFOLUMP* TextureInfoLumps = (BSPTEXTUREINFOLUMP*)malloc(numTexInfo * sizeof(BSPTEXTUREINFOLUMP));
+
+		fseek(bspfile, fileHeader.lump[LUMP_TEXINFO].nOffset, SEEK_SET);
+		fread(TextureInfoLumps, texInfoLength, 1, bspfile);
 
 		int numTris = 0;
 
@@ -533,10 +560,19 @@ bool rcMeshLoaderObj::loadBSP(const std::string& filename)
 		for (int i = 0; i < solidFaceCounter; i++)
 		{
 			// Find the first edge in the face and extract all the consecutive edges into the sEdges array
-			uint32_t iFirstEdge = (faces + validFaces[i])->iFirstEdge;
+			BSPFACE* ThisFace = (faces + validFaces[i]);
+			uint32_t iFirstEdge = ThisFace->iFirstEdge;
 			int faceType = faceTypes[i];
+
+			char* ThisTexture = TextureLumps[TextureInfoLumps[ThisFace->iTextureInfo].Texture_Index].Name;
+
+			if (ThisTexture[0] == '!' || !strcmp(ThisTexture, "sky"))
+			{
+				faceType = MT_MODEL_ILLUSIONARY;
+			}
+
 			int modelIndex = modelFaceIndices[i];
-			uint16_t nEdges = (faces + validFaces[i])->nEdges;
+			uint16_t nEdges = ThisFace->nEdges;
 			size_t sEdgesLength = nEdges * sizeof(BSPSURFEDGE);
 			size_t sIndicesLength = nEdges * sizeof(uint16_t);
 
