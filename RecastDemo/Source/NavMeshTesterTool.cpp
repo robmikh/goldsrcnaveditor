@@ -961,15 +961,21 @@ void NavMeshTesterTool::handleRender()
 		{
 			dd.depthMask(false);
 			const unsigned int spathCol = duRGBA(64,16,0,220);
-			const unsigned int offMeshCol = duRGBA(128,96,0,220);
 			dd.begin(DU_DRAW_LINES, 2.0f);
 			for (int i = 0; i < m_nstraightPath-1; ++i)
 			{
 				unsigned int col;
 				if (m_straightPathFlags[i] & DT_STRAIGHTPATH_OFFMESH_CONNECTION)
-					col = offMeshCol;
+				{
+					unsigned int CurrFlags;
+					m_navMesh->getPolyFlags(m_straightPathPolys[i], &CurrFlags);
+					NavFlagDefinition* FlagDef = GetFlagByFlagId(CurrFlags);
+					col = FlagDef->DebugColor;
+				}
 				else
+				{
 					col = spathCol;
+				}
 				
 				dd.vertex(m_straightPath[i*3], m_straightPath[i*3+1]+0.4f, m_straightPath[i*3+2], col);
 				dd.vertex(m_straightPath[(i+1)*3], m_straightPath[(i+1)*3+1]+0.4f, m_straightPath[(i+1)*3+2], col);
@@ -980,13 +986,24 @@ void NavMeshTesterTool::handleRender()
 			{
 				unsigned int col;
 				if (m_straightPathFlags[i] & DT_STRAIGHTPATH_START)
+				{
 					col = startCol;
+				}
 				else if (m_straightPathFlags[i] & DT_STRAIGHTPATH_END)
+				{
 					col = endCol;
+				}					
 				else if (m_straightPathFlags[i] & DT_STRAIGHTPATH_OFFMESH_CONNECTION)
-					col = offMeshCol;
+				{
+					unsigned int CurrFlags;
+					m_navMesh->getPolyFlags(m_straightPathPolys[i], &CurrFlags);
+					NavFlagDefinition* FlagDef = GetFlagByFlagId(CurrFlags);
+					col = FlagDef->DebugColor;
+				}					
 				else
+				{
 					col = spathCol;
+				}
 				dd.vertex(m_straightPath[i*3], m_straightPath[i*3+1]+0.4f, m_straightPath[i*3+2], col);
 			}
 			dd.end();

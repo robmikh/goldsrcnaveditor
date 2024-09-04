@@ -411,7 +411,7 @@ void duDebugDrawNavMeshPoly(duDebugDraw* dd, const dtNavMesh& mesh, dtPolyRef re
 
 	if (poly->getType() == DT_POLYTYPE_OFFMESH_CONNECTION)
 	{
-		dtOffMeshConnection* con = tile->offMeshCons[ip - tile->header->offMeshBase];
+		/*dtOffMeshConnection* con = tile->offMeshCons[ip - tile->header->offMeshBase];
 
 		dd->begin(DU_DRAW_LINES, 2.0f);
 
@@ -419,7 +419,7 @@ void duDebugDrawNavMeshPoly(duDebugDraw* dd, const dtNavMesh& mesh, dtPolyRef re
 		duAppendArc(dd, con->pos[0],con->pos[1],con->pos[2], con->pos[3],con->pos[4],con->pos[5], 0.25f,
 					(con->flags & 1) ? 0.6f : 0.0f, 0.6f, c);
 		
-		dd->end();
+		dd->end();*/
 	}
 	else
 	{
