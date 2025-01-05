@@ -100,7 +100,8 @@ void Sample_SoloMesh::handleSettings()
 
 	if (imguiButton("Save"))
 	{
-		Sample::saveAll("solo_navmesh.bin", m_navMesh);
+		dtNavMesh* CurrentMesh = m_NavMeshArray[m_SelectedNavMeshIndex].m_navMesh;
+		Sample::saveAll("solo_navmesh.bin", CurrentMesh);
 	}
 
 	if (imguiButton("Load"))
